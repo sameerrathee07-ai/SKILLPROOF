@@ -1,0 +1,54 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = "file:./dev.db"
+}
+
+model User {
+  id               String   @id @default(cuid())
+  email            String   @unique
+  name             String
+  role             String   @default("SOLVER") // SOLVER, POSTER, ADMIN
+  tokens           Int      @default(50)
+  credibilityScore Float    @default(1.0)
+  createdAt        DateTime @default(now())
+  pitches          Pitch[]
+}
+
+model Organization {
+  id        String    @id @default(cuid())
+  name      String
+  type      String    // COACHING_CENTER, TUITION_ACADEMY, COLLEGE_DEPT
+  createdAt DateTime  @default(now())
+  problems  Problem[]
+}
+
+model Problem {
+  id               String       @id @default(cuid())
+  organizationId   String
+  organization     Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  title            String
+  description      String
+  frictionCategory String       // SCHEDULING, STUDENT_RETENTION, ADMIN_WORKFLOW
+  status           String       @default("OPEN") // OPEN, CLOSED
+  createdAt        DateTime     @default(now())
+  pitches          Pitch[]
+}
+
+model Pitch {
+  id             String   @id @default(cuid())
+  problemId      String
+  problem        Problem  @relation(fields: [problemId], references: [id], onDelete: Cascade)
+  solverId       String
+  solver         User     @relation(fields: [solverId], references: [id], onDelete: Cascade)
+  stepData       String   // JSON string storing the 5 steps
+  score          Float
+  passed         Boolean
+  knockedOut     Boolean
+  scoreBreakdown String   // JSON string storing dimensional breakdown and actionable feedback
+  revisionCount  Int      @default(0)
+  createdAt      DateTime @default(now())
+}

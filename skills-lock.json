@@ -1,0 +1,41 @@
+{
+  "version": 1,
+  "skills": {
+    "api-security-best-practices": {
+      "source": "sickn33/antigravity-awesome-skills",
+      "sourceType": "github",
+      "skillPath": "skills/api-security-best-practices/SKILL.md",
+      "computedHash": "b40a7e04579748b282f6a317b19cd9f9c83da8e8255db2fb9ef34a89fa547f8c"
+    },
+    "nextjs-best-practices": {
+      "source": "sickn33/antigravity-awesome-skills",
+      "sourceType": "github",
+      "skillPath": "skills/nextjs-best-practices/SKILL.md",
+      "computedHash": "0a3dd1e299ea935e8f5435895d549a139c86a5c1152c85cc1ad5f0eab4d3d89c"
+    },
+    "nextjs-supabase-auth": {
+      "source": "sickn33/antigravity-awesome-skills",
+      "sourceType": "github",
+      "skillPath": "skills/nextjs-supabase-auth/SKILL.md",
+      "computedHash": "f2f8b00877ed450e4b5d1e040b52c1c4d312ec2264c75d2248253814c2a9e9ba"
+    },
+    "nodejs-best-practices": {
+      "source": "sickn33/antigravity-awesome-skills",
+      "sourceType": "github",
+      "skillPath": "skills/nodejs-best-practices/SKILL.md",
+      "computedHash": "b57334d753ce0f23a37f72f7f4e70d095f4d9ae0ff983e76f66d3b5e5fb58b8c"
+    },
+    "senior-fullstack": {
+      "source": "sickn33/antigravity-awesome-skills",
+      "sourceType": "github",
+      "skillPath": "skills/senior-fullstack/SKILL.md",
+      "computedHash": "aeb5d559e500b2f3c0a827ba7921ae19e818e5faee7d7bb74b4e5e18ba4ad53b"
+    },
+    "ui-ux-pro-max-skill": {
+      "source": "dokhacgiakhoa/antigravity-ide",
+      "sourceType": "github",
+      "skillPath": ".agent/skills/ui-ux-pro-max-skill/SKILL.md",
+      "computedHash": "602fef23961bc16579463d0629433d70f337c54fa674267fea0bad1abba9e53f"
+    }
+  }
+}
