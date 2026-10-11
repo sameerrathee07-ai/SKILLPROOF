@@ -1,5 +1,4 @@
 import Link from "next/link";
-import { prisma } from "@/lib/db";
 import { 
   Building2, 
   ArrowRight, 
@@ -12,6 +11,9 @@ import {
   Inbox
 } from "lucide-react";
 
+import { ProblemService } from "@/lib/services/problem.service";
+import { SlideButton } from "@/components/SlideButton";
+
 export const dynamic = "force-dynamic";
 
 export default async function ProblemsPage({
@@ -21,24 +23,8 @@ export default async function ProblemsPage({
 }) {
   const selectedCategory = searchParams?.category || "ALL";
 
-  const whereClause: any = {};
-  if (selectedCategory !== "ALL") {
-    whereClause.frictionCategory = selectedCategory;
-  }
-
-  const problems = await prisma.problem.findMany({
-    where: whereClause,
-    include: {
-      organization: true,
-      pitches: {
-        select: {
-          id: true,
-          passed: true,
-          score: true,
-        },
-      },
-    },
-    orderBy: { createdAt: "desc" },
+  const problems = await ProblemService.listProblems({
+    category: selectedCategory,
   });
 
   const categories = [
@@ -165,21 +151,25 @@ export default async function ProblemsPage({
                 </div>
 
                 {/* Action CTA */}
-                <div className="flex flex-col sm:flex-row md:flex-col gap-2.5 shrink-0 justify-end md:w-48 pt-2 md:pt-0 border-t md:border-t-0 border-slate-100">
-                  <Link
-                    href={`/problems/${problem.id}/pitch`}
-                    className="inline-flex items-center justify-center space-x-2 px-5 py-3 rounded-xl bg-brand-600 hover:bg-brand-500 text-white font-semibold text-xs transition-all shadow-md shadow-brand-500/20 hover:scale-[1.02] text-center"
-                  >
-                    <span>Submit Pitch</span>
-                    <ArrowRight className="w-3.5 h-3.5" />
+                <div className="flex flex-col sm:flex-row md:flex-col gap-2.5 shrink-0 justify-end md:w-52 pt-2 md:pt-0 border-t md:border-t-0 border-slate-100">
+                  <Link href={`/problems/${problem.id}/pitch`} className="w-full">
+                    <SlideButton
+                      variant="primary"
+                      icon={<ArrowRight className="w-3.5 h-3.5" />}
+                      className="w-full py-2.5"
+                    >
+                      Submit Pitch
+                    </SlideButton>
                   </Link>
 
-                  <Link
-                    href={`/org/problems/${problem.id}/proposals`}
-                    className="inline-flex items-center justify-center space-x-1.5 px-4 py-2.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-medium text-xs transition-colors text-center"
-                  >
-                    <Inbox className="w-3.5 h-3.5 text-slate-500" />
-                    <span>Poster Inbox</span>
+                  <Link href={`/org/problems/${problem.id}/proposals`} className="w-full">
+                    <SlideButton
+                      variant="emerald"
+                      icon={<Inbox className="w-3.5 h-3.5" />}
+                      className="w-full py-2.5"
+                    >
+                      Poster Inbox
+                    </SlideButton>
                   </Link>
                 </div>
               </div>

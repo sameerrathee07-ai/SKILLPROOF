@@ -1,5 +1,4 @@
 import Link from "next/link";
-import { prisma } from "@/lib/db";
 import { 
   ShieldCheck, 
   ArrowRight, 
@@ -13,25 +12,19 @@ import {
   Building2,
   Users
 } from "lucide-react";
+import { ProblemService } from "@/lib/services/problem.service";
+import { SlideButton } from "@/components/SlideButton";
 
 export const dynamic = "force-dynamic";
 
 export default async function HomePage() {
-  const [problemCount, orgCount, pitchCount, vettedPitchCount] = await Promise.all([
-    prisma.problem.count(),
-    prisma.organization.count(),
-    prisma.pitch.count(),
-    prisma.pitch.count({ where: { passed: true } }),
+  const [
+    { problemCount, orgCount, pitchCount, vettedPitchCount },
+    recentProblems,
+  ] = await Promise.all([
+    ProblemService.getPlatformStats(),
+    ProblemService.getRecentProblems(3),
   ]);
-
-  const recentProblems = await prisma.problem.findMany({
-    include: {
-      organization: true,
-      pitches: { select: { id: true, passed: true } },
-    },
-    take: 3,
-    orderBy: { createdAt: "desc" },
-  });
 
   return (
     <div className="space-y-12 pb-12">
@@ -56,28 +49,34 @@ export default async function HomePage() {
           </p>
 
           <div className="flex flex-wrap items-center gap-4 pt-2">
-            <Link
-              href="/problems"
-              className="inline-flex items-center space-x-2 px-6 py-3.5 rounded-xl bg-brand-600 hover:bg-brand-500 text-white font-semibold text-sm transition-all shadow-lg shadow-brand-600/30 hover:scale-[1.02]"
-            >
-              <span>Browse Challenges (Solver Flow)</span>
-              <ArrowRight className="w-4 h-4" />
+            <Link href="/problems">
+              <SlideButton
+                variant="emerald"
+                icon={<ArrowRight className="w-4 h-4" />}
+                className="px-6 py-3.5 text-sm font-bold shadow-lg"
+              >
+                Browse Challenges (Solver Flow)
+              </SlideButton>
             </Link>
 
-            <Link
-              href="/org/problems/new"
-              className="inline-flex items-center space-x-2 px-6 py-3.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 font-semibold text-sm border border-slate-700 transition-all hover:scale-[1.02]"
-            >
-              <Building2 className="w-4 h-4 text-brand-400" />
-              <span>Post a Problem (Poster Flow)</span>
+            <Link href="/org/problems/new">
+              <SlideButton
+                variant="primary"
+                icon={<Building2 className="w-4 h-4 text-slate-300" />}
+                className="px-6 py-3.5 text-sm font-bold border-slate-700 text-white hover:text-slate-900 bg-slate-800"
+              >
+                Post a Problem (Poster Flow)
+              </SlideButton>
             </Link>
 
-            <Link
-              href="/admin/calibrate"
-              className="inline-flex items-center space-x-2 px-5 py-3.5 rounded-xl bg-slate-800/80 hover:bg-slate-700 text-amber-300 font-semibold text-sm border border-amber-500/20 transition-all"
-            >
-              <Sliders className="w-4 h-4 text-amber-400" />
-              <span>Gate Calibration (VAL-1 to 6)</span>
+            <Link href="/admin/calibrate">
+              <SlideButton
+                variant="coral"
+                icon={<Sliders className="w-4 h-4" />}
+                className="px-5 py-3.5 text-sm font-bold"
+              >
+                Gate Calibration (VAL-1 to 6)
+              </SlideButton>
             </Link>
           </div>
         </div>

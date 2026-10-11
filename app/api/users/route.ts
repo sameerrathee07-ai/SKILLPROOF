@@ -1,13 +1,7 @@
-import { NextResponse } from "next/server";
-import { prisma } from "@/lib/db";
+import { UserService } from "@/lib/services/user.service";
+import { withErrorHandler, successResponse } from "@/lib/api/response";
 
-export async function GET() {
-  try {
-    const users = await prisma.user.findMany({
-      orderBy: { credibilityScore: "desc" },
-    });
-    return NextResponse.json(users);
-  } catch (error: any) {
-    return NextResponse.json({ error: error.message }, { status: 500 });
-  }
-}
+export const GET = withErrorHandler(async () => {
+  const users = await UserService.listUsers();
+  return successResponse(users);
+});

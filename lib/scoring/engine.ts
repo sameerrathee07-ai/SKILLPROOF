@@ -62,6 +62,7 @@ export interface ScoreResult {
     constraintsFeasibility: DimensionScore;
   };
   actionableFeedback: string[];
+  knockoutReason?: string;
 }
 
 export const GATE_THRESHOLD = 6.0;
@@ -69,7 +70,10 @@ export const GATE_THRESHOLD = 6.0;
 /**
  * Normalizes alternatives input to an array of non-empty items.
  */
-function normalizeAlternatives(
+/**
+ * Normalizes alternatives input to an array of non-empty items.
+ */
+export function normalizeAlternatives(
   raw: AlternativeItem[] | string | undefined
 ): { name: string; details: string }[] {
   if (!raw) return [];
@@ -114,7 +118,7 @@ function normalizeAlternatives(
 /**
  * Checks for explicit numbers or currency symbols
  */
-function hasPricing(text: string): boolean {
+export function hasPricing(text: string): boolean {
   if (!text) return false;
   // Match currency symbols ($ ₹ € £ Rs INR USD) or numbers (e.g. 500, 15,000, 25k)
   const currencyPattern = /[$₹€£]|(?:rs\.?|inr|usd|eur|gbp)\b/i;
@@ -125,7 +129,7 @@ function hasPricing(text: string): boolean {
 /**
  * Calculates total character count across all submitted steps
  */
-function calculateTotalLength(data: PitchInput): number {
+export function calculateTotalLength(data: PitchInput): number {
   const parts: string[] = [
     data.step1Diagnosis || "",
     data.step2Solution || "",
@@ -149,42 +153,72 @@ function calculateTotalLength(data: PitchInput): number {
   return parts.reduce((sum, str) => sum + str.trim().length, 0);
 }
 
+export interface KnockoutCheckResult {
+  hasPricing: boolean;
+  hasAlternatives: boolean;
+  hasMinEffort: boolean;
+  totalLength: number;
+  alternativesCount: number;
+  reasons: string[];
+  isKnockedOut: boolean;
+}
+
 /**
- * Pure, stateless pitch evaluator implementing Two-Tier Gating.
+ * Evaluates binary Tier 1 knockout conditions
  */
-export function evaluatePitch(data: PitchInput): ScoreResult {
+export function checkKnockoutCriteria(data: PitchInput): KnockoutCheckResult {
   const totalLength = calculateTotalLength(data);
   const budgetCombined = `${data.step4Budget || ""} ${data.step4CostBreakdown || ""}`.trim();
   const alternatives = normalizeAlternatives(data.step3Alternatives);
+  const hasPricingPass = hasPricing(budgetCombined);
+  const hasAlternativesPass = alternatives.length >= 2;
+  const hasMinEffortPass = totalLength > 200;
 
-  // ==========================================
-  // TIER 1: Binary Knockout Criteria
-  // ==========================================
-  const knockoutReasons: string[] = [];
+  const reasons: string[] = [];
 
   // Knockout 1: Pricing Check
-  if (!hasPricing(budgetCombined)) {
-    knockoutReasons.push(
+  if (!hasPricingPass) {
+    reasons.push(
       "KNOCKOUT: Missing explicit pricing/budget. You must provide concrete numerical estimates or currency figures in Step 4 (e.g., ₹15,000, $500, or hourly/milestone rates)."
     );
   }
 
   // Knockout 2: Alternatives Check (Min 2 options)
-  if (alternatives.length < 2) {
-    knockoutReasons.push(
+  if (!hasAlternativesPass) {
+    reasons.push(
       "KNOCKOUT: Incomplete alternatives evaluation. Step 3 must list and evaluate at least 2 distinct alternative approaches considered before arriving at your recommendation."
     );
   }
 
   // Knockout 3: Minimum Effort Check (> 200 total characters)
-  if (totalLength <= 200) {
-    knockoutReasons.push(
+  if (!hasMinEffortPass) {
+    reasons.push(
       `KNOCKOUT: Minimum effort threshold not met. Your total pitch contains ${totalLength} characters, but requires at least 200 characters across all fields.`
     );
   }
 
+  return {
+    hasPricing: hasPricingPass,
+    hasAlternatives: hasAlternativesPass,
+    hasMinEffort: hasMinEffortPass,
+    totalLength,
+    alternativesCount: alternatives.length,
+    reasons,
+    isKnockedOut: reasons.length > 0,
+  };
+}
+
+/**
+ * Pure, stateless pitch evaluator implementing Two-Tier Gating.
+ */
+export function evaluatePitch(data: PitchInput): ScoreResult {
+  // ==========================================
+  // TIER 1: Binary Knockout Criteria
+  // ==========================================
+  const knockout = checkKnockoutCriteria(data);
+
   // If any Knockout failed, immediately exit Tier 1 without running Tier 2
-  if (knockoutReasons.length > 0) {
+  if (knockout.isKnockedOut) {
     return {
       passed: false,
       knockedOut: true,
@@ -197,9 +231,13 @@ export function evaluatePitch(data: PitchInput): ScoreResult {
         solverProof: { score: 0, maxScore: 1.5, feedback: "Evaluation halted due to knockout." },
         constraintsFeasibility: { score: 0, maxScore: 1.5, feedback: "Evaluation halted due to knockout." },
       },
-      actionableFeedback: knockoutReasons,
+      actionableFeedback: knockout.reasons,
+      knockoutReason: knockout.reasons[0],
     };
   }
+
+  const alternatives = normalizeAlternatives(data.step3Alternatives);
+  const budgetCombined = `${data.step4Budget || ""} ${data.step4CostBreakdown || ""}`.trim();
 
   // ==========================================
   // TIER 2: 6-Dimension Quality Score (0 to 10)

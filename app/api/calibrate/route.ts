@@ -1,11 +1,7 @@
-import { NextResponse } from "next/server";
 import { runCalibrationSuite } from "@/lib/scoring/calibrationData";
+import { withErrorHandler, successResponse } from "@/lib/api/response";
 
-export async function GET() {
-  try {
-    const report = runCalibrationSuite();
-    return NextResponse.json(report);
-  } catch (error: any) {
-    return NextResponse.json({ error: error.message }, { status: 500 });
-  }
-}
+export const GET = withErrorHandler(async () => {
+  const report = runCalibrationSuite();
+  return successResponse(report);
+});

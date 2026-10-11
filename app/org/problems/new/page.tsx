@@ -12,6 +12,8 @@ import {
   Layers,
   GraduationCap
 } from "lucide-react";
+import { SlideButton } from "@/components/SlideButton";
+
 
 export default function NewProblemPage() {
   const router = useRouter();
@@ -288,14 +290,15 @@ export default function NewProblemPage() {
 
         {/* Submit */}
         <div className="pt-4 border-t border-slate-100 flex items-center justify-end">
-          <button
+          <SlideButton
             type="submit"
             disabled={submitting}
-            className="inline-flex items-center space-x-2 px-6 py-3 rounded-xl bg-slate-900 hover:bg-slate-800 text-white font-bold text-xs shadow-md transition-all hover:scale-[1.02] disabled:opacity-50"
+            variant="primary"
+            icon={<PlusCircle className="w-4 h-4 text-slate-400" />}
+            className="px-6 py-3 text-xs font-bold"
           >
-            <PlusCircle className="w-4 h-4 text-brand-400" />
             <span>{submitting ? "Publishing Challenge..." : "Publish Challenge & Open Vetted Inbox"}</span>
-          </button>
+          </SlideButton>
         </div>
       </form>
     </div>

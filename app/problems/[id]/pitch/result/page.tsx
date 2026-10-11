@@ -21,6 +21,7 @@ import {
 import { ScoreResult } from "@/lib/scoring/engine";
 import { ScoreMeter } from "@/components/ScoreMeter";
 import { KnockoutCard } from "@/components/KnockoutCard";
+import { SlideButton } from "@/components/SlideButton";
 
 export default function PitchResultPage() {
   const params = useParams();
@@ -306,20 +307,22 @@ export default function PitchResultPage() {
 
         <div className="flex items-center gap-3">
           {!passed ? (
-            <Link
-              href={`/problems/${problemId}/pitch?revision=true`}
-              className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-brand-600 hover:bg-brand-500 text-white font-bold text-xs shadow-md transition-all"
-            >
-              <RotateCcw className="w-3.5 h-3.5" />
-              <span>Revise Pitch Now</span>
+            <Link href={`/problems/${problemId}/pitch?revision=true`}>
+              <SlideButton
+                variant="coral"
+                icon={<RotateCcw className="w-3.5 h-3.5" />}
+              >
+                Revise Pitch Now
+              </SlideButton>
             </Link>
           ) : (
-            <Link
-              href={`/org/proposals/${pitchId}`}
-              className="inline-flex items-center gap-2 px-6 py-2.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-white font-bold text-xs shadow-md transition-all"
-            >
-              <FileText className="w-3.5 h-3.5 text-brand-400" />
-              <span>View Standardized Proposal (PDF Export)</span>
+            <Link href={`/org/proposals/${pitchId}`}>
+              <SlideButton
+                variant="primary"
+                icon={<FileText className="w-3.5 h-3.5 text-slate-400" />}
+              >
+                Standardized Proposal & PDF Export
+              </SlideButton>
             </Link>
           )}
         </div>

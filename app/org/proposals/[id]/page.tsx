@@ -12,12 +12,12 @@ import {
   Award, 
   Calendar, 
   DollarSign, 
-  Building2, 
-  User, 
-  Layers, 
+  Layers,
   ExternalLink,
   Lock
 } from "lucide-react";
+import { SlideButton } from "@/components/SlideButton";
+
 
 export default function StandardizedProposalPage() {
   const params = useParams();
@@ -90,14 +90,15 @@ export default function StandardizedProposalPage() {
         </Link>
 
         <div className="flex items-center gap-3">
-          <button
+          <SlideButton
             type="button"
             onClick={handlePrint}
-            className="inline-flex items-center space-x-2 px-5 py-2.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-white font-bold text-xs shadow-md transition-all hover:scale-[1.02]"
+            variant="primary"
+            icon={<Printer className="w-4 h-4 text-slate-400" />}
+            className="px-5 py-2.5 font-bold"
           >
-            <Printer className="w-4 h-4 text-brand-400" />
             <span>Download Proposal (PDF / Print)</span>
-          </button>
+          </SlideButton>
         </div>
       </div>
 

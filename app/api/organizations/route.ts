@@ -1,18 +1,7 @@
-import { NextResponse } from "next/server";
-import { prisma } from "@/lib/db";
+import { OrganizationService } from "@/lib/services/organization.service";
+import { withErrorHandler, successResponse } from "@/lib/api/response";
 
-export async function GET() {
-  try {
-    const orgs = await prisma.organization.findMany({
-      include: {
-        _count: {
-          select: { problems: true },
-        },
-      },
-      orderBy: { createdAt: "desc" },
-    });
-    return NextResponse.json(orgs);
-  } catch (error: any) {
-    return NextResponse.json({ error: error.message }, { status: 500 });
-  }
-}
+export const GET = withErrorHandler(async () => {
+  const orgs = await OrganizationService.listOrganizations();
+  return successResponse(orgs);
+});

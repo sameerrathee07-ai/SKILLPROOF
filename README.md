@@ -34,20 +34,32 @@ SkillProof eliminates low-quality noise through an explainable, deterministic ga
 # 1. Install dependencies
 npm install
 
-# 2. Push schema to SQLite
+# 2. Configure environment
+cp .env.example .env
+
+# 3. Push schema to SQLite
 npm run db:push
 
-# 3. Seed sample education data
+# 4. Seed sample education data
 npm run db:seed
 
-# 4. Run deterministic Gate Calibration Suite (VAL-1 to VAL-6)
+# 5. Run deterministic Gate Calibration Suite (VAL-1 to VAL-6)
 npm run calibrate
 
-# 5. Start development server
+# 6. Start development server
 npm run dev
 ```
 
 Visit [http://localhost:3000](http://localhost:3000)
+
+---
+
+## Architecture & Code Organization
+Complete technical architecture and layered design is documented in [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md):
+- **Services Layer (`lib/services/`)**: Pure business logic decoupled from UI and routes.
+- **Config & Env (`lib/config/env.ts`)**: Centralized typed runtime settings.
+- **State Management (`lib/hooks/usePitchForm.ts`)**: Unified multi-step form and live knockout analysis.
+- **Standardized API (`lib/api/`)**: Centralized error hierarchy and typed response envelopes.
 
 ---
 

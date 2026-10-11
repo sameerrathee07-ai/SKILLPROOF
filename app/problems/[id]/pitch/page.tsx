@@ -29,35 +29,35 @@ interface AlternativeItem {
   rejectionReason: string;
 }
 
+import { usePitchForm } from "@/lib/hooks/usePitchForm";
+
 export default function PitchWizardPage() {
   const params = useParams();
   const searchParams = useSearchParams();
   const router = useRouter();
   const problemId = params?.id as string;
+  const isRevision = searchParams?.get("revision") === "true";
 
   const [problem, setProblem] = useState<any>(null);
   const [loadingProblem, setLoadingProblem] = useState(true);
   const [submitting, setSubmitting] = useState(false);
-  const [currentStep, setCurrentStep] = useState(1);
-  const [revisionCount, setRevisionCount] = useState(0);
 
-  // Form State across 5 steps
-  const [step1Diagnosis, setStep1Diagnosis] = useState("");
-  const [step2Solution, setStep2Solution] = useState("");
-  const [step2Deliverables, setStep2Deliverables] = useState("");
-  const [step2Milestones, setStep2Milestones] = useState("");
-  const [step3Alternatives, setStep3Alternatives] = useState<AlternativeItem[]>([
-    { name: "", pros: "", cons: "", rejectionReason: "" },
-    { name: "", pros: "", cons: "", rejectionReason: "" },
-  ]);
-  const [step4Budget, setStep4Budget] = useState("");
-  const [step4CostBreakdown, setStep4CostBreakdown] = useState("");
-  const [step5Experience, setStep5Experience] = useState("");
-  const [step5ProofLinks, setStep5ProofLinks] = useState("");
-  const [step5Constraints, setStep5Constraints] = useState("");
-
-  // Storage key for draft persistence
-  const draftKey = `skillproof_pitch_draft_${problemId}`;
+  // Modular state management hook for all 5 steps, drafts, and gate validation
+  const {
+    form,
+    currentStep,
+    pitchInput,
+    knockoutStatus,
+    updateField,
+    updateAlternative,
+    addAlternative,
+    removeAlternative,
+    loadSample,
+    clearDraft,
+    nextStep,
+    prevStep,
+    goToStep,
+  } = usePitchForm(problemId, isRevision ? 1 : 0);
 
   // Fetch problem details
   useEffect(() => {
@@ -79,199 +79,15 @@ export default function PitchWizardPage() {
     }
   }, [problemId]);
 
-  // Restore draft or check if revising
-  useEffect(() => {
-    const isRevision = searchParams?.get("revision") === "true";
-    const saved = localStorage.getItem(draftKey);
-    if (saved) {
-      try {
-        const parsed = JSON.parse(saved);
-        setStep1Diagnosis(parsed.step1Diagnosis || "");
-        setStep2Solution(parsed.step2Solution || "");
-        setStep2Deliverables(parsed.step2Deliverables || "");
-        setStep2Milestones(parsed.step2Milestones || "");
-        if (Array.isArray(parsed.step3Alternatives) && parsed.step3Alternatives.length >= 2) {
-          setStep3Alternatives(parsed.step3Alternatives);
-        }
-        setStep4Budget(parsed.step4Budget || "");
-        setStep4CostBreakdown(parsed.step4CostBreakdown || "");
-        setStep5Experience(parsed.step5Experience || "");
-        setStep5ProofLinks(parsed.step5ProofLinks || "");
-        setStep5Constraints(parsed.step5Constraints || "");
-        if (parsed.revisionCount) {
-          setRevisionCount(parsed.revisionCount + (isRevision ? 1 : 0));
-        } else if (isRevision) {
-          setRevisionCount(1);
-        }
-      } catch (e) {}
-    }
-  }, [draftKey, searchParams]);
-
-  // Auto-save draft on changes
-  useEffect(() => {
-    const draft = {
-      step1Diagnosis,
-      step2Solution,
-      step2Deliverables,
-      step2Milestones,
-      step3Alternatives,
-      step4Budget,
-      step4CostBreakdown,
-      step5Experience,
-      step5ProofLinks,
-      step5Constraints,
-      revisionCount,
-    };
-    localStorage.setItem(draftKey, JSON.stringify(draft));
-  }, [
-    draftKey,
-    step1Diagnosis,
-    step2Solution,
-    step2Deliverables,
-    step2Milestones,
-    step3Alternatives,
-    step4Budget,
-    step4CostBreakdown,
-    step5Experience,
-    step5ProofLinks,
-    step5Constraints,
-    revisionCount,
-  ]);
-
-  // Pre-validation / Live Gate Checks
-  const totalCharacters =
-    step1Diagnosis.length +
-    step2Solution.length +
-    step2Deliverables.length +
-    step2Milestones.length +
-    step3Alternatives.reduce(
-      (acc, a) => acc + a.name.length + a.pros.length + a.cons.length + a.rejectionReason.length,
-      0
-    ) +
-    step4Budget.length +
-    step4CostBreakdown.length +
-    step5Experience.length +
-    step5ProofLinks.length +
-    step5Constraints.length;
-
-  const hasPricingDetected =
-    /[$₹€£]|(?:rs\.?|inr|usd|eur|gbp)\b/i.test(`${step4Budget} ${step4CostBreakdown}`) ||
-    /\b\d+(?:[,\.]\d+)*(?:\s*(?:k|lakh|thousand|hundred|per|hr|mo|pm|\/hr|\/month))?\b/i.test(
-      `${step4Budget} ${step4CostBreakdown}`
-    );
-
-  const validAlternativesCount = step3Alternatives.filter((a) => a.name.trim().length > 2).length;
-
-  const handleAlternativeChange = (
-    index: number,
-    field: keyof AlternativeItem,
-    val: string
-  ) => {
-    const updated = [...step3Alternatives];
-    updated[index][field] = val;
-    setStep3Alternatives(updated);
-  };
-
-  const addAlternative = () => {
-    setStep3Alternatives([
-      ...step3Alternatives,
-      { name: "", pros: "", cons: "", rejectionReason: "" },
-    ]);
-  };
-
-  const removeAlternative = (index: number) => {
-    if (step3Alternatives.length <= 2) return;
-    setStep3Alternatives(step3Alternatives.filter((_, idx) => idx !== index));
-  };
-
-  // Demo auto-fill helpers
-  const fillSamplePitch = (type: "STRONG" | "WEAK") => {
-    if (type === "STRONG") {
-      setStep1Diagnosis(
-        "Root cause is operational latency in paper-based attendance logging. Tutors and faculty record attendance on physical registers, creating an average 4-day blind spot where consecutive student absences go unnoticed by counselors. The systemic friction lies in lack of real-time event triggers before course abandonment occurs."
-      );
-      setStep2Solution(
-        "A progressive web app (PWA) with 1-tap batch attendance and real-time webhook alerts. The system automatically identifies 3 consecutive absences and triggers instant WhatsApp follow-up messages to parents."
-      );
-      setStep2Deliverables(
-        "1. Faculty Attendance PWA (<40s marking time). 2. Counselor Triage Queue & Dashboard. 3. WhatsApp Cloud API Webhook Dispatcher. 4. Weekly CSV export for administration records."
-      );
-      setStep2Milestones(
-        "Sprint 1 (Days 1-7): Database schema, Auth, PWA attendance screen. Sprint 2 (Days 8-14): Counselor dashboard & WhatsApp triggers. Sprint 3 (Days 15-20): 2-batch pilot & staff training."
-      );
-      setStep3Alternatives([
-        {
-          name: "Biometric Fingerprint Hardware Terminals",
-          pros: "Automated without faculty interaction.",
-          cons: "High initial hardware cost (₹12,000/classroom) and bottleneck queues of 60 students entering doors.",
-          rejectionReason: "Too costly and creates classroom entry delays.",
-        },
-        {
-          name: "Commercial ERP Subscription (Teachmint/Classting)",
-          pros: "Pre-built feature suite.",
-          cons: "Expensive ongoing recurring fee (₹40/student/mo = ₹24,000/mo) and rigid user interface.",
-          rejectionReason: "Prohibitive ongoing licensing overhead without custom webhook rules.",
-        },
-      ]);
-      setStep4Budget(
-        "Total Fee: ₹22,000 INR (Milestone 1: ₹7,000; Milestone 2: ₹10,000; Milestone 3: ₹5,000 on final handover)."
-      );
-      setStep4CostBreakdown(
-        "Hosting on Supabase/Vercel ($0 tier) + WhatsApp Cloud API free tier for first 1,000 service messages/month."
-      );
-      setStep5Experience(
-        "Built attendance & batch management portal for university IEEE club (350+ members). Highly proficient in Next.js, TypeScript, PostgreSQL, and Node.js."
-      );
-      setStep5ProofLinks(
-        "https://github.com/aryan-dev/attendance-triage-demo | Portfolio: https://aryanverma.vercel.app"
-      );
-      setStep5Constraints(
-        "Operational constraint: Faculty vary in tech savviness, so UI uses large touch targets with 1-tap 'All Present'. PWA caches offline if basement classroom WiFi drops."
-      );
-    } else {
-      // Weak pitch (Missing pricing or alternatives)
-      setStep1Diagnosis("Students don't come to classes and management is unhappy about it.");
-      setStep2Solution("I will build a website to fix attendance.");
-      setStep2Deliverables("Website and database.");
-      setStep2Milestones("Soon.");
-      setStep3Alternatives([
-        {
-          name: "Manual calling",
-          pros: "Simple",
-          cons: "Tiring",
-          rejectionReason: "Too hard",
-        },
-      ]);
-      setStep4Budget("Budget is negotiable, we can discuss later based on features."); // Missing pricing!
-      setStep4CostBreakdown("Open to discussion.");
-      setStep5Experience("Student learning web dev.");
-      setStep5ProofLinks("None yet.");
-      setStep5Constraints("None.");
-    }
-  };
-
   const handleSubmit = async () => {
     setSubmitting(true);
     try {
-      const pitchInput = {
-        step1Diagnosis,
-        step2Solution,
-        step2Deliverables,
-        step2Milestones,
-        step3Alternatives,
-        step4Budget,
-        step4CostBreakdown,
-        step5Experience,
-        step5ProofLinks,
-        step5Constraints,
-      };
-
       const res = await fetch(`/api/problems/${problemId}/pitch`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           pitchInput,
-          revisionCount,
+          revisionCount: form.revisionCount,
         }),
       });
 
@@ -302,15 +118,15 @@ export default function PitchWizardPage() {
   }
 
   const steps = [
-    { num: 1, title: "Diagnosis" },
-    { num: 2, title: "Solution & Specs" },
-    { num: 3, title: "Alternatives" },
-    { num: 4, title: "Budget & Milestones" },
-    { num: 5, title: "Proof & Feasibility" },
+    { id: 1, title: "Problem Breakdown", description: "Identify root constraints & friction" },
+    { id: 2, title: "Proposed Architecture", description: "Stack, schema & system flow" },
+    { id: 3, title: "Alternative Analysis", description: "Min 2 approaches (Knockout rule)" },
+    { id: 4, title: "Timeline & Pricing", description: "Fixed budget & milestone specs" },
+    { id: 5, title: "Proof & Gate Review", description: "Run deterministic gate check" },
   ];
 
   return (
-    <div className="max-w-4xl mx-auto space-y-8 pb-16">
+    <div className="max-w-6xl mx-auto space-y-6 pb-16">
       {/* Back button & Problem Context */}
       <div className="space-y-3">
         <Link
@@ -322,116 +138,69 @@ export default function PitchWizardPage() {
         </Link>
 
         {problem && (
-          <div className="p-4 rounded-xl bg-white border border-slate-200/80 shadow-sm flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+          <div className="p-5 rounded-2xl bg-white border border-slate-200 shadow-sm flex flex-col sm:flex-row sm:items-center justify-between gap-4">
             <div>
-              <span className="text-[11px] font-bold text-indigo-700 bg-indigo-50 px-2.5 py-0.5 rounded-full uppercase">
+              <span className="text-[11px] font-bold text-slate-900 bg-slate-100 px-2.5 py-0.5 rounded-full uppercase">
                 {problem.frictionCategory?.replace("_", " ")}
               </span>
-              <h2 className="font-bold text-slate-900 text-base mt-1">{problem.title}</h2>
+              <h2 className="font-bold text-slate-900 text-lg mt-1">{problem.title}</h2>
               <p className="text-xs text-slate-500">
                 Organization: <strong className="text-slate-700">{problem.organization?.name}</strong>
               </p>
             </div>
 
-            {/* Demo auto-fill dropdown/buttons */}
-            <div className="flex items-center gap-2 shrink-0">
-              <button
-                type="button"
-                onClick={() => fillSamplePitch("STRONG")}
-                className="px-2.5 py-1.5 rounded-lg text-xs font-semibold bg-emerald-50 text-emerald-700 hover:bg-emerald-100 border border-emerald-200 transition-colors flex items-center gap-1"
-                title="Fill with calibrated strong pitch passing the 6.0 gate"
+            {/* Quality Gate Status Indicator */}
+            <div className="flex items-center gap-3 text-xs bg-slate-50 p-2.5 rounded-xl border border-slate-200/80">
+              <span
+                className={`flex items-center gap-1 font-semibold ${
+                  knockoutStatus.hasPricing ? "text-emerald-600" : "text-amber-600"
+                }`}
               >
-                <Sparkles className="w-3.5 h-3.5" />
-                <span>Fill Strong Pitch (Pass)</span>
-              </button>
-
-              <button
-                type="button"
-                onClick={() => fillSamplePitch("WEAK")}
-                className="px-2.5 py-1.5 rounded-lg text-xs font-semibold bg-rose-50 text-rose-700 hover:bg-rose-100 border border-rose-200 transition-colors flex items-center gap-1"
-                title="Fill with weak pitch triggering knockout / gate fail"
+                {knockoutStatus.hasPricing ? "✓ Pricing Quoted" : "⚠ Pricing Needed"}
+              </span>
+              <span className="text-slate-300">|</span>
+              <span
+                className={`flex items-center gap-1 font-semibold ${
+                  knockoutStatus.hasAlternatives ? "text-emerald-600" : "text-amber-600"
+                }`}
               >
-                <AlertCircle className="w-3.5 h-3.5" />
-                <span>Fill Weak Pitch (Fail)</span>
-              </button>
+                {knockoutStatus.hasAlternatives ? "✓ 2/2 Alternatives" : `⚠ ${knockoutStatus.alternativesCount}/2 Alternatives`}
+              </span>
+              <span className="text-slate-300">|</span>
+              <span
+                className={`flex items-center gap-1 font-semibold ${
+                  knockoutStatus.hasMinEffort ? "text-emerald-600" : "text-rose-600"
+                }`}
+              >
+                {knockoutStatus.totalLength} / 200 chars
+              </span>
             </div>
           </div>
         )}
       </div>
 
-      {/* Wizard Progress Bar */}
-      <div className="bg-white p-4 rounded-2xl border border-slate-200 shadow-sm">
-        <div className="flex items-center justify-between mb-4">
-          <div className="flex items-center gap-2">
-            <span className="text-xs font-bold text-brand-600 bg-brand-50 px-2.5 py-1 rounded-full">
-              Step {currentStep} of 5
-            </span>
-            <span className="text-sm font-semibold text-slate-800">
-              {steps[currentStep - 1].title}
-            </span>
-            {revisionCount > 0 && (
-              <span className="text-xs font-semibold text-amber-700 bg-amber-50 px-2 py-0.5 rounded-full border border-amber-200">
-                Revision #{revisionCount}
-              </span>
-            )}
-          </div>
-
-          {/* Real-time Quality Gate Health Indicator */}
-          <div className="flex items-center gap-3 text-xs">
-            <span
-              className={`flex items-center gap-1 font-semibold ${
-                hasPricingDetected ? "text-emerald-600" : "text-amber-600"
-              }`}
-            >
-              {hasPricingDetected ? "✓ Pricing Detected" : "⚠ Pricing Needed"}
-            </span>
-            <span
-              className={`flex items-center gap-1 font-semibold ${
-                validAlternativesCount >= 2 ? "text-emerald-600" : "text-amber-600"
-              }`}
-            >
-              {validAlternativesCount >= 2 ? "✓ Alternatives: 2/2" : `⚠ Alternatives: ${validAlternativesCount}/2`}
-            </span>
-            <span
-              className={`flex items-center gap-1 font-semibold ${
-                totalCharacters > 200 ? "text-emerald-600" : "text-rose-600"
-              }`}
-            >
-              {totalCharacters} / 200 chars
-            </span>
-          </div>
+      {/* Main Form Layout: Stepper on Left, Active Form Step on Right */}
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+        {/* Left: Uiverse Stepper */}
+        <div className="lg:col-span-4">
+          <Stepper
+            currentStep={currentStep}
+            steps={steps}
+            onStepClick={(id) => goToStep(id)}
+          />
         </div>
 
-        {/* Step Tabs */}
-        <div className="grid grid-cols-5 gap-2">
-          {steps.map((s) => (
-            <button
-              key={s.num}
-              type="button"
-              onClick={() => setCurrentStep(s.num)}
-              className={`h-2 rounded-full transition-all ${
-                currentStep === s.num
-                  ? "bg-brand-600"
-                  : currentStep > s.num
-                  ? "bg-emerald-500"
-                  : "bg-slate-200"
-              }`}
-              title={`Go to step ${s.num}: ${s.title}`}
-            />
-          ))}
-        </div>
-      </div>
+        {/* Right: Active Step Form */}
+        <div className="lg:col-span-8 bg-white p-6 sm:p-8 rounded-2xl border border-slate-200 shadow-sm space-y-6">
+          {/* STEP 1: PROBLEM DIAGNOSIS */}
+          {currentStep === 1 && (
+            <div className="space-y-4">
+              <div className="border-b border-slate-100 pb-3">
+                <h3 className="text-lg font-bold text-slate-900">Step 1: Problem Diagnosis</h3>
+                <p className="text-xs text-slate-500 mt-1">
+                  Perform a root-cause analysis. Distinguish the underlying systemic bottlenecks from surface symptoms.
+                </p>
 
-      {/* Step Form Body */}
-      <div className="bg-white p-6 sm:p-8 rounded-2xl border border-slate-200 shadow-sm space-y-6">
-        {/* STEP 1: PROBLEM DIAGNOSIS */}
-        {currentStep === 1 && (
-          <div className="space-y-4">
-            <div className="border-b border-slate-100 pb-3">
-              <h3 className="text-lg font-bold text-slate-900">Step 1: Problem Diagnosis</h3>
-              <p className="text-xs text-slate-500 mt-1">
-                Perform a root-cause analysis. Distinguish the underlying systemic bottlenecks from surface symptoms.
-              </p>
             </div>
 
             <div className="space-y-2">
@@ -439,15 +208,15 @@ export default function PitchWizardPage() {
                 Root Cause & Friction Analysis <span className="text-rose-500">*</span>
               </label>
               <textarea
-                value={step1Diagnosis}
-                onChange={(e) => setStep1Diagnosis(e.target.value)}
+                value={form.step1Diagnosis}
+                onChange={(e) => updateField("step1Diagnosis", e.target.value)}
                 rows={6}
                 placeholder="Explain why the problem occurs operationally (e.g. manual tracking lag, lack of real-time alerts, fragmented communication). Avoid merely restating the problem title."
                 className="w-full p-3.5 text-sm rounded-xl border border-slate-300 focus:ring-2 focus:ring-brand-500 focus:border-brand-500 transition-all"
               />
               <div className="flex justify-between text-xs text-slate-400">
                 <span>Weight: 2.0 / 10.0 in Tier 2 score</span>
-                <span>{step1Diagnosis.length} chars</span>
+                <span>{form.step1Diagnosis.length} chars</span>
               </div>
             </div>
           </div>
@@ -468,8 +237,8 @@ export default function PitchWizardPage() {
                 Solution Architecture & Strategy <span className="text-rose-500">*</span>
               </label>
               <textarea
-                value={step2Solution}
-                onChange={(e) => setStep2Solution(e.target.value)}
+                value={form.step2Solution}
+                onChange={(e) => updateField("step2Solution", e.target.value)}
                 rows={4}
                 placeholder="Describe your technical and operational solution (e.g. Next.js PWA, webhook worker, PostgreSQL database, WhatsApp Cloud API)."
                 className="w-full p-3.5 text-sm rounded-xl border border-slate-300 focus:ring-2 focus:ring-brand-500 focus:border-brand-500 transition-all"
@@ -481,8 +250,8 @@ export default function PitchWizardPage() {
                 Concrete Deliverables Spec
               </label>
               <textarea
-                value={step2Deliverables}
-                onChange={(e) => setStep2Deliverables(e.target.value)}
+                value={form.step2Deliverables}
+                onChange={(e) => updateField("step2Deliverables", e.target.value)}
                 rows={3}
                 placeholder="Itemize the exact artifacts: e.g. 1. Mobile attendance PWA, 2. Counselor triage dashboard, 3. WhatsApp webhook integration, 4. CSV export."
                 className="w-full p-3.5 text-sm rounded-xl border border-slate-300 focus:ring-2 focus:ring-brand-500 focus:border-brand-500 transition-all"
@@ -495,8 +264,8 @@ export default function PitchWizardPage() {
               </label>
               <input
                 type="text"
-                value={step2Milestones}
-                onChange={(e) => setStep2Milestones(e.target.value)}
+                value={form.step2Milestones}
+                onChange={(e) => updateField("step2Milestones", e.target.value)}
                 placeholder="e.g. Sprint 1 (Days 1-7): Auth & UI | Sprint 2 (Days 8-14): Webhooks & Dashboard | Sprint 3: Pilot & Handover"
                 className="w-full p-3.5 text-sm rounded-xl border border-slate-300 focus:ring-2 focus:ring-brand-500 focus:border-brand-500 transition-all"
               />
@@ -526,7 +295,7 @@ export default function PitchWizardPage() {
             </div>
 
             <div className="space-y-4">
-              {step3Alternatives.map((alt, idx) => (
+              {form.step3Alternatives.map((alt, idx) => (
                 <div
                   key={idx}
                   className="p-4 rounded-xl border border-slate-200 bg-slate-50/60 space-y-3 relative"
@@ -535,7 +304,7 @@ export default function PitchWizardPage() {
                     <span className="text-xs font-bold text-brand-700 uppercase">
                       Alternative Option #{idx + 1}
                     </span>
-                    {step3Alternatives.length > 2 && (
+                    {form.step3Alternatives.length > 2 && (
                       <button
                         type="button"
                         onClick={() => removeAlternative(idx)}
@@ -554,7 +323,7 @@ export default function PitchWizardPage() {
                     <input
                       type="text"
                       value={alt.name}
-                      onChange={(e) => handleAlternativeChange(idx, "name", e.target.value)}
+                      onChange={(e) => updateAlternative(idx, "name", e.target.value)}
                       placeholder="e.g. Biometric Hardware Fingerprint Scanner or Commercial Off-the-Shelf ERP"
                       className="w-full p-2.5 text-sm rounded-lg border border-slate-300 bg-white focus:ring-2 focus:ring-brand-500"
                     />
@@ -568,7 +337,7 @@ export default function PitchWizardPage() {
                       <input
                         type="text"
                         value={alt.pros}
-                        onChange={(e) => handleAlternativeChange(idx, "pros", e.target.value)}
+                        onChange={(e) => updateAlternative(idx, "pros", e.target.value)}
                         placeholder="e.g. Automated without staff input"
                         className="w-full p-2.5 text-xs rounded-lg border border-slate-300 bg-white"
                       />
@@ -580,7 +349,7 @@ export default function PitchWizardPage() {
                       <input
                         type="text"
                         value={alt.cons}
-                        onChange={(e) => handleAlternativeChange(idx, "cons", e.target.value)}
+                        onChange={(e) => updateAlternative(idx, "cons", e.target.value)}
                         placeholder="e.g. Expensive hardware (₹12,000/room), slow hallway queues"
                         className="w-full p-2.5 text-xs rounded-lg border border-slate-300 bg-white"
                       />
@@ -594,7 +363,7 @@ export default function PitchWizardPage() {
                     <input
                       type="text"
                       value={alt.rejectionReason}
-                      onChange={(e) => handleAlternativeChange(idx, "rejectionReason", e.target.value)}
+                      onChange={(e) => updateAlternative(idx, "rejectionReason", e.target.value)}
                       placeholder="e.g. Rejected due to high upfront equipment cost and student entry bottleneck"
                       className="w-full p-2.5 text-xs rounded-lg border border-slate-300 bg-white"
                     />
@@ -620,8 +389,8 @@ export default function PitchWizardPage() {
                 Total Budget & Milestone Payment Distribution <span className="text-rose-500">*</span>
               </label>
               <textarea
-                value={step4Budget}
-                onChange={(e) => setStep4Budget(e.target.value)}
+                value={form.step4Budget}
+                onChange={(e) => updateField("step4Budget", e.target.value)}
                 rows={3}
                 placeholder="e.g. Total Budget: ₹24,000 INR (Milestone 1: ₹8,000 on PWA attendance completion; Milestone 2: ₹10,000 on WhatsApp webhook & dashboard; Milestone 3: ₹6,000 upon pilot sign-off)."
                 className="w-full p-3.5 text-sm rounded-xl border border-slate-300 focus:ring-2 focus:ring-brand-500 focus:border-brand-500 transition-all"
@@ -634,8 +403,8 @@ export default function PitchWizardPage() {
               </label>
               <input
                 type="text"
-                value={step4CostBreakdown}
-                onChange={(e) => setStep4CostBreakdown(e.target.value)}
+                value={form.step4CostBreakdown}
+                onChange={(e) => updateField("step4CostBreakdown", e.target.value)}
                 placeholder="e.g. Hosting on Vercel/Supabase free tier (₹0/mo ongoing) + WhatsApp Cloud API free tier for first 1,000 conversations/mo."
                 className="w-full p-3.5 text-sm rounded-xl border border-slate-300 focus:ring-2 focus:ring-brand-500 focus:border-brand-500 transition-all"
               />
@@ -658,8 +427,8 @@ export default function PitchWizardPage() {
                 Relevant Experience & Tech Stack Capabilities <span className="text-rose-500">*</span>
               </label>
               <textarea
-                value={step5Experience}
-                onChange={(e) => setStep5Experience(e.target.value)}
+                value={form.step5Experience}
+                onChange={(e) => updateField("step5Experience", e.target.value)}
                 rows={3}
                 placeholder="Describe relevant past projects, university clubs, hackathon prototypes, or technologies mastered (e.g. Next.js, Node.js, PostgreSQL, WhatsApp API)."
                 className="w-full p-3.5 text-sm rounded-xl border border-slate-300 focus:ring-2 focus:ring-brand-500 focus:border-brand-500 transition-all"
@@ -672,8 +441,8 @@ export default function PitchWizardPage() {
               </label>
               <input
                 type="text"
-                value={step5ProofLinks}
-                onChange={(e) => setStep5ProofLinks(e.target.value)}
+                value={form.step5ProofLinks}
+                onChange={(e) => updateField("step5ProofLinks", e.target.value)}
                 placeholder="https://github.com/your-username/project | https://your-portfolio.vercel.app"
                 className="w-full p-3.5 text-sm rounded-xl border border-slate-300 focus:ring-2 focus:ring-brand-500 focus:border-brand-500 transition-all"
               />
@@ -684,8 +453,8 @@ export default function PitchWizardPage() {
                 Operational Constraints & Feasibility Risks
               </label>
               <textarea
-                value={step5Constraints}
-                onChange={(e) => setStep5Constraints(e.target.value)}
+                value={form.step5Constraints}
+                onChange={(e) => updateField("step5Constraints", e.target.value)}
                 rows={3}
                 placeholder="Acknowledge real-world friction: e.g. non-technical staff adoption, basement classroom offline WiFi sync, WhatsApp rate limits, student data privacy."
                 className="w-full p-3.5 text-sm rounded-xl border border-slate-300 focus:ring-2 focus:ring-brand-500 focus:border-brand-500 transition-all"
@@ -698,28 +467,31 @@ export default function PitchWizardPage() {
         <div className="pt-6 border-t border-slate-100 flex items-center justify-between">
           <div>
             {currentStep > 1 && (
-              <button
+              <SlideButton
                 type="button"
-                onClick={() => setCurrentStep(currentStep - 1)}
-                className="px-4 py-2.5 rounded-xl border border-slate-200 text-slate-700 font-semibold text-xs hover:bg-slate-50 transition-colors"
+                onClick={prevStep}
+                variant="primary"
+                className="px-4 py-2"
               >
-                Previous Step
-              </button>
+                &larr; Previous Step
+              </SlideButton>
             )}
           </div>
 
           <div className="flex items-center gap-3">
             {currentStep < 5 ? (
-              <button
+              <SlideButton
                 type="button"
-                onClick={() => setCurrentStep(currentStep + 1)}
-                className="inline-flex items-center space-x-1.5 px-6 py-2.5 rounded-xl bg-brand-600 hover:bg-brand-500 text-white font-semibold text-xs shadow-md shadow-brand-500/20 transition-all"
+                onClick={nextStep}
+                variant="primary"
+                icon={<ArrowRight className="w-3.5 h-3.5" />}
+                className="px-5 py-2.5"
               >
-                <span>Continue</span>
-                <ArrowRight className="w-3.5 h-3.5" />
-              </button>
+                Continue
+              </SlideButton>
             ) : (
               <SlideButton
+                type="button"
                 variant="emerald"
                 disabled={submitting}
                 onClick={handleSubmit}
@@ -733,5 +505,6 @@ export default function PitchWizardPage() {
         </div>
       </div>
     </div>
-  );
+  </div>
+);
 }

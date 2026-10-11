@@ -1,5 +1,4 @@
 import Link from "next/link";
-import { prisma } from "@/lib/db";
 import { 
   Building2, 
   ArrowLeft, 
@@ -9,12 +8,12 @@ import {
   Star, 
   Clock, 
   DollarSign, 
-  Filter,
-  Eye,
-  AlertTriangle
+  Filter, 
+  Eye, 
+  AlertTriangle 
 } from "lucide-react";
 import { ProposalCard } from "@/components/ProposalCard";
-
+import { PitchService } from "@/lib/services/pitch.service";
 
 export const dynamic = "force-dynamic";
 
@@ -23,22 +22,10 @@ export default async function VettedInboxPage({
 }: {
   params: { id: string };
 }) {
-  const problem = await prisma.problem.findUnique({
-    where: { id: params.id },
-    include: {
-      organization: true,
-      pitches: {
-        include: {
-          solver: true,
-        },
-        orderBy: {
-          score: "desc",
-        },
-      },
-    },
-  });
-
-  if (!problem) {
+  let inboxData;
+  try {
+    inboxData = await PitchService.getVettedInbox(params.id);
+  } catch {
     return (
       <div className="py-24 text-center max-w-md mx-auto space-y-4">
         <h2 className="text-xl font-bold text-slate-900">Problem not found</h2>
@@ -49,10 +36,7 @@ export default async function VettedInboxPage({
     );
   }
 
-  // Filter ONLY vetted proposals that passed (>= 6.0 and not knocked out)
-  const vettedProposals = problem.pitches.filter((p) => p.passed);
-  const totalSubmissions = problem.pitches.length;
-  const blockedNoise = totalSubmissions - vettedProposals.length;
+  const { problem, totalSubmissions, blockedNoise, proposals: vettedProposals } = inboxData;
 
   return (
     <div className="space-y-8 pb-16">
@@ -143,13 +127,9 @@ export default async function VettedInboxPage({
         ) : (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
             {vettedProposals.map((proposal) => {
-              let stepDataParsed: any = {};
-              try {
-                stepDataParsed = JSON.parse(proposal.stepData);
-              } catch (e) {}
-
-              const altCount = Array.isArray(stepDataParsed.step3Alternatives)
-                ? stepDataParsed.step3Alternatives.length
+              const stepData = (proposal.stepDataParsed || {}) as any;
+              const altCount = Array.isArray(stepData.step3Alternatives)
+                ? stepData.step3Alternatives.length
                 : 2;
 
               return (
@@ -159,8 +139,8 @@ export default async function VettedInboxPage({
                   solverName={proposal.solver.name}
                   score={proposal.score}
                   passed={proposal.passed}
-                  fixedQuote={stepDataParsed.step4Budget || "Quoted in Proposal"}
-                  deliveryTime={stepDataParsed.step2Milestones ? "2-3 Sprints" : "3 Weeks"}
+                  fixedQuote={stepData.step4Budget || "Quoted in Proposal"}
+                  deliveryTime={stepData.step2Milestones ? "2-3 Sprints" : "3 Weeks"}
                   alternativesCount={altCount}
                   targetOrgName={problem.organization.name}
                 />
