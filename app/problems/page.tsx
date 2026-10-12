@@ -52,7 +52,7 @@ export default async function ProblemsPage({
       {/* Header */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 pb-6 border-b border-slate-200">
         <div>
-          <div className="inline-flex items-center gap-2 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-brand-50 text-brand-700 mb-2">
+          <div className="inline-flex items-center gap-2 px-2.5 py-0.5 rounded-md text-xs font-semibold bg-slate-100 text-slate-800 border border-slate-200 mb-2">
             <BookOpen className="w-3.5 h-3.5" />
             <span>Education Wedge Challenges</span>
           </div>
@@ -84,9 +84,9 @@ export default async function ProblemsPage({
             <Link
               key={cat.id}
               href={`/problems${cat.id === "ALL" ? "" : `?category=${cat.id}`}`}
-              className={`px-3.5 py-1.5 rounded-full text-xs font-semibold whitespace-nowrap transition-colors ${
+              className={`px-3.5 py-1.5 rounded-md text-xs font-semibold whitespace-nowrap transition-colors ${
                 isActive
-                  ? "bg-brand-600 text-white shadow-sm"
+                  ? "bg-slate-900 text-white shadow-sm"
                   : "bg-white text-slate-600 border border-slate-200 hover:bg-slate-50"
               }`}
             >
@@ -111,11 +111,11 @@ export default async function ProblemsPage({
             return (
               <div
                 key={problem.id}
-                className="p-6 sm:p-7 rounded-2xl bg-white border border-slate-200/90 shadow-sm hover:border-brand-300 transition-all flex flex-col md:flex-row md:items-start justify-between gap-6"
+                className="p-6 sm:p-7 rounded-2xl bg-white border border-slate-200/90 shadow-sm hover:border-slate-400 transition-all flex flex-col md:flex-row md:items-start justify-between gap-6"
               >
                 <div className="space-y-3.5 flex-1">
                   <div className="flex flex-wrap items-center gap-2.5">
-                    <span className="px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-indigo-50 text-indigo-700 border border-indigo-100 uppercase tracking-wider">
+                    <span className="px-2.5 py-0.5 rounded-md text-[11px] font-bold bg-slate-100 text-slate-800 border border-slate-200 uppercase tracking-wider">
                       {problem.frictionCategory.replace("_", " ")}
                     </span>
                     <span className="text-xs font-medium text-slate-500 flex items-center gap-1">
@@ -134,7 +134,7 @@ export default async function ProblemsPage({
 
                   {/* Quality Filter Proof Metrics */}
                   <div className="flex flex-wrap items-center gap-4 pt-2 text-xs">
-                    <div className="flex items-center gap-1.5 text-emerald-700 font-semibold bg-emerald-50 px-3 py-1 rounded-full border border-emerald-200/50">
+                    <div className="flex items-center gap-1.5 text-emerald-700 font-semibold bg-emerald-50 px-3 py-1 rounded-md border border-emerald-200/50">
                       <CheckCircle2 className="w-3.5 h-3.5" />
                       <span>{passedPitches.length} Vetted Proposals</span>
                     </div>

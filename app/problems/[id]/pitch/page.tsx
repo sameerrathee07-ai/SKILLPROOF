@@ -140,7 +140,7 @@ export default function PitchWizardPage() {
         {problem && (
           <div className="p-5 rounded-2xl bg-white border border-slate-200 shadow-sm flex flex-col sm:flex-row sm:items-center justify-between gap-4">
             <div>
-              <span className="text-[11px] font-bold text-slate-900 bg-slate-100 px-2.5 py-0.5 rounded-full uppercase">
+              <span className="text-[11px] font-bold text-slate-900 bg-slate-100 px-2.5 py-0.5 rounded-md uppercase">
                 {problem.frictionCategory?.replace("_", " ")}
               </span>
               <h2 className="font-bold text-slate-900 text-lg mt-1">{problem.title}</h2>

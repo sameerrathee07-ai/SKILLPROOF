@@ -69,7 +69,7 @@ export function ScoreMeter({
             <h3 className="text-base font-bold text-slate-900">
               Tier 2: 6-Dimension Quality Meter
             </h3>
-            <span className="text-[11px] font-semibold text-slate-500 bg-slate-100 px-2 py-0.5 rounded-full">
+            <span className="text-[11px] font-semibold text-slate-500 bg-slate-100 px-2 py-0.5 rounded-md">
               Deterministic Gate
             </span>
           </div>
@@ -91,7 +91,7 @@ export function ScoreMeter({
           </div>
 
           <div
-            className={`text-[11px] font-bold px-2.5 py-0.5 rounded-full inline-block mt-1 ${
+            className={`text-[11px] font-bold px-2.5 py-0.5 rounded-md inline-block mt-1 ${
               passed
                 ? "bg-emerald-50 text-emerald-700 border border-emerald-200"
                 : knockedOut

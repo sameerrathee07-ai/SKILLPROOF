@@ -29,18 +29,15 @@ export default async function HomePage() {
   return (
     <div className="space-y-12 pb-12">
       {/* Hero Section */}
-      <div className="relative overflow-hidden rounded-3xl bg-gradient-to-b from-slate-900 via-slate-900 to-indigo-950 text-white p-8 sm:p-12 shadow-2xl border border-slate-800">
-        <div className="absolute top-0 right-0 -mt-12 -mr-12 w-96 h-96 bg-brand-500/10 rounded-full blur-3xl pointer-events-none" />
-        <div className="absolute bottom-0 left-0 -mb-12 -ml-12 w-80 h-80 bg-indigo-500/10 rounded-full blur-3xl pointer-events-none" />
-
+      <div className="relative overflow-hidden rounded-2xl bg-slate-900 text-white p-8 sm:p-12 shadow-xl border border-slate-800">
         <div className="relative z-10 max-w-3xl space-y-6">
-          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-brand-500/10 border border-brand-500/20 text-brand-300 text-xs font-medium">
+          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-md bg-slate-800 border border-slate-700 text-sky-300 text-xs font-medium">
             <GraduationCap className="w-4 h-4" />
-            <span>Phase 2: Single-Sector Wedge — Education First</span>
+            <span>Phase 2: Single-Sector Wedge: Education First</span>
           </div>
 
           <h1 className="text-4xl sm:text-5xl font-extrabold tracking-tight text-white leading-tight">
-            Quality-Gated Problem Solving for <span className="text-transparent bg-clip-text bg-gradient-to-r from-brand-300 to-indigo-200">Education</span>
+            Quality-Gated Problem Solving for <span className="text-sky-400">Education</span>
           </h1>
 
           <p className="text-slate-300 text-base sm:text-lg leading-relaxed">
@@ -210,10 +207,10 @@ export default async function HomePage() {
               >
                 <div className="space-y-3">
                   <div className="flex items-center justify-between">
-                    <span className="px-2.5 py-1 rounded-full text-[11px] font-semibold bg-indigo-50 text-indigo-700 border border-indigo-100">
+                    <span className="px-2.5 py-1 rounded-md text-[11px] font-semibold bg-slate-100 text-slate-800 border border-slate-200">
                       {prob.frictionCategory.replace("_", " ")}
                     </span>
-                    <span className="text-xs font-semibold text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded-full">
+                    <span className="text-xs font-semibold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-md border border-emerald-200/50">
                       {passedCount} Vetted
                     </span>
                   </div>

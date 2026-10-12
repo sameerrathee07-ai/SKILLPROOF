@@ -1,3 +1,4 @@
+import Link from "next/link";
 import type { Metadata } from "next";
 import { Inter } from "next/font/google";
 import "./globals.css";
@@ -7,7 +8,7 @@ import { AuthProvider } from "@/lib/auth/AuthContext";
 const inter = Inter({ subsets: ["latin"] });
 
 export const metadata: Metadata = {
-  title: "SkillProof — Quality-Gated Education Problem Solving",
+  title: "SkillProof: Quality-Gated Education Problem Solving",
   description:
     "Deterministic, explainable quality gate connecting student solvers with coaching centers, tuition providers, and college departments.",
 };
@@ -28,16 +29,20 @@ export default function RootLayout({
         </AuthProvider>
 
         <footer className="no-print border-t border-slate-200/80 bg-white/60 py-6 text-center text-xs text-slate-500">
-          <div className="max-w-7xl mx-auto px-4 flex flex-col sm:flex-row items-center justify-between gap-2">
+          <div className="max-w-7xl mx-auto px-4 flex flex-col sm:flex-row items-center justify-between gap-3">
             <div>
-              <span className="font-semibold text-slate-700">SkillProof Platform</span> — Focused Single-Sector Wedge: Education
+              <span className="font-semibold text-slate-700">SkillProof Platform</span>: Focused Single-Sector Wedge: Education
             </div>
-            <div className="flex items-center gap-4 text-slate-400">
-              <span>Tier 1: Binary Knockouts</span>
+            <div className="flex items-center gap-4 text-slate-500">
+              <Link href="/privacy" className="hover:text-slate-800 transition-colors">
+                Privacy Policy
+              </Link>
               <span>•</span>
-              <span>Tier 2: 6.0/10.0 Quality Threshold</span>
+              <Link href="/terms" className="hover:text-slate-800 transition-colors">
+                Terms and Conditions
+              </Link>
               <span>•</span>
-              <span>Zero LLM Dependency</span>
+              <span className="text-slate-400">Zero LLM Dependency</span>
             </div>
           </div>
         </footer>

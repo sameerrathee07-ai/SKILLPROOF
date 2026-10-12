@@ -123,7 +123,7 @@ export default function PitchResultPage() {
       >
         <div className="relative z-10 flex flex-col sm:flex-row items-center sm:items-start justify-between gap-6">
           <div className="space-y-3 text-center sm:text-left">
-            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider bg-white/10 backdrop-blur-md">
+            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-md text-xs font-bold uppercase tracking-wider bg-white/10 backdrop-blur-md">
               {passed ? (
                 <>
                   <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" />
@@ -161,7 +161,7 @@ export default function PitchResultPage() {
             {/* Credibility Score Reward or Revise Option */}
             {passed ? (
               <div className="pt-2 flex items-center gap-3">
-                <div className="inline-flex items-center gap-2 bg-emerald-500/20 border border-emerald-400/30 px-3.5 py-1.5 rounded-full text-xs font-semibold text-emerald-200">
+                <div className="inline-flex items-center gap-2 bg-emerald-500/20 border border-emerald-400/30 px-3.5 py-1.5 rounded-md text-xs font-semibold text-emerald-200">
                   <TrendingUp className="w-4 h-4 text-emerald-300" />
                   <span>Credibility Score Incremented: <strong>+0.10</strong></span>
                 </div>

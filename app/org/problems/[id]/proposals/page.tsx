@@ -52,7 +52,7 @@ export default async function VettedInboxPage({
 
         <div className="p-6 rounded-2xl bg-white border border-slate-200/90 shadow-sm space-y-3">
           <div className="flex flex-wrap items-center justify-between gap-2">
-            <span className="text-[11px] font-bold text-indigo-700 bg-indigo-50 px-2.5 py-0.5 rounded-full uppercase">
+            <span className="text-[11px] font-bold text-slate-800 bg-slate-100 border border-slate-200 px-2.5 py-0.5 rounded-md uppercase">
               {problem.frictionCategory.replace("_", " ")}
             </span>
             <span className="text-xs font-medium text-slate-500">

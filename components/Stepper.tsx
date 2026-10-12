@@ -83,7 +83,7 @@ export function Stepper({
 
                 <div className="mt-1 flex items-center gap-2">
                   <span
-                    className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-[11px] font-medium ${
+                    className={`inline-flex items-center rounded-md px-2.5 py-0.5 text-[11px] font-medium ${
                       isCompleted
                         ? "bg-emerald-50 text-emerald-700"
                         : isCurrent

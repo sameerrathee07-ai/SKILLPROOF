@@ -123,7 +123,7 @@ export default function StandardizedProposalPage() {
 
             {/* Quality Seal */}
             <div className="text-right">
-              <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-50 text-emerald-800 border border-emerald-300 font-extrabold text-xs">
+              <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-md bg-emerald-50 text-emerald-800 border border-emerald-300 font-extrabold text-xs">
                 <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
                 <span>Vetted Score: {proposal.score.toFixed(1)} / 10.0</span>
               </div>
@@ -134,7 +134,7 @@ export default function StandardizedProposalPage() {
           </div>
 
           <div className="pt-2">
-            <span className="text-[11px] font-bold text-indigo-700 bg-indigo-50 px-2 py-0.5 rounded-full uppercase">
+            <span className="text-[11px] font-bold text-slate-800 bg-slate-100 border border-slate-200 px-2 py-0.5 rounded-md uppercase">
               {proposal.problem.frictionCategory.replace("_", " ")}
             </span>
             <h1 className="text-2xl font-black text-slate-900 mt-1 leading-snug">
