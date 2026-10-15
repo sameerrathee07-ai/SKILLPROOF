@@ -52,7 +52,6 @@ export default function PitchWizardPage() {
     updateAlternative,
     addAlternative,
     removeAlternative,
-    loadSample,
     clearDraft,
     nextStep,
     prevStep,

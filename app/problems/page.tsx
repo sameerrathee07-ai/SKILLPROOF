@@ -99,8 +99,21 @@ export default async function ProblemsPage({
       {/* Problems List */}
       <div className="grid grid-cols-1 gap-6">
         {problems.length === 0 ? (
-          <div className="p-12 text-center bg-white rounded-2xl border border-slate-200">
-            <p className="text-slate-500 text-sm">No problems found in this category.</p>
+          <div className="p-16 text-center bg-white rounded-2xl border border-slate-200 shadow-sm space-y-4">
+            <div className="w-12 h-12 rounded-xl bg-slate-100 text-slate-500 mx-auto flex items-center justify-center">
+              <BookOpen className="w-6 h-6" />
+            </div>
+            <h3 className="text-base font-bold text-slate-900">No Education Challenges Posted Yet</h3>
+            <p className="text-slate-500 text-xs max-w-md mx-auto">
+              Your challenge feed is ready. Post an operational problem to start receiving quality-vetted pitches from student solvers.
+            </p>
+            <div className="pt-2">
+              <Link href="/org/problems/new">
+                <SlideButton variant="primary" icon={<ArrowRight className="w-3.5 h-3.5" />}>
+                  Post the First Challenge
+                </SlideButton>
+              </Link>
+            </div>
           </div>
         ) : (
           problems.map((problem) => {

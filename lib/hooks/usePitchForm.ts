@@ -39,70 +39,7 @@ const DEFAULT_STATE: PitchFormState = {
   revisionCount: 0,
 };
 
-const STRONG_SAMPLE: PitchFormState = {
-  step1Diagnosis:
-    "Root cause is operational latency in paper-based attendance logging. Tutors and faculty record attendance on physical registers, creating an average 4-day blind spot where consecutive student absences go unnoticed by counselors. The systemic friction lies in lack of real-time event triggers before course abandonment occurs.",
-  step2Solution:
-    "A progressive web app (PWA) with 1-tap batch attendance and real-time webhook alerts. The system automatically identifies 3 consecutive absences and triggers instant WhatsApp follow-up messages to parents.",
-  step2Deliverables:
-    "1. Faculty Attendance PWA (<40s marking time). 2. Counselor Triage Queue & Dashboard. 3. WhatsApp Cloud API Webhook Dispatcher. 4. Weekly CSV export for administration records.",
-  step2Milestones:
-    "Sprint 1 (Days 1-7): Database schema, Auth, PWA attendance screen. Sprint 2 (Days 8-14): Counselor dashboard & WhatsApp triggers. Sprint 3 (Days 15-20): 2-batch pilot & staff training.",
-  step3Alternatives: [
-    {
-      name: "Biometric Fingerprint Hardware Terminals",
-      pros: "Automated without faculty interaction.",
-      cons: "High initial hardware cost (₹12,000/classroom) and bottleneck queues of 60 students entering doors.",
-      rejectionReason: "Too costly and creates classroom entry delays.",
-    },
-    {
-      name: "Commercial ERP Subscription (Teachmint/Classting)",
-      pros: "Pre-built feature suite.",
-      cons: "Expensive ongoing recurring fee (₹40/student/mo = ₹24,000/mo) and rigid user interface.",
-      rejectionReason: "Prohibitive ongoing licensing overhead without custom webhook rules.",
-    },
-  ],
-  step4Budget:
-    "Total Fee: ₹22,000 INR (Milestone 1: ₹7,000; Milestone 2: ₹10,000; Milestone 3: ₹5,000 on final handover).",
-  step4CostBreakdown:
-    "Hosting on Supabase/Vercel ($0 tier) + WhatsApp Cloud API free tier for first 1,000 service messages/month.",
-  step5Experience:
-    "Built and deployed an attendance tracking portal for my university IEEE student branch (350 active members). Strong proficiency in Next.js, Node.js, PostgreSQL, and WhatsApp Business Cloud API.",
-  step5ProofLinks:
-    "https://github.com/aryan-dev/attendance-triage-demo | Live portfolio at https://aryanverma.vercel.app",
-  step5Constraints:
-    "Constraint awareness: Faculty have variable digital literacy, so attendance interface requires large touch buttons and 1-tap 'All Present' with single-tap exception marking. System handles offline caching if basement classroom WiFi drops, syncing when connection restores.",
-  revisionCount: 0,
-};
 
-const WEAK_SAMPLE: PitchFormState = {
-  step1Diagnosis:
-    "Students skip classes all the time and it is a big problem for coaching institutes. We need an app.",
-  step2Solution:
-    "I will make a full mobile app using Flutter and AI to automatically solve all student attendance issues easily.",
-  step2Deliverables: "Mobile app and web portal.",
-  step2Milestones: "Phase 1: Build app. Phase 2: Launch app.",
-  step3Alternatives: [
-    {
-      name: "Do nothing",
-      pros: "Free",
-      cons: "Bad",
-      rejectionReason: "Doesn't solve the problem",
-    },
-    {
-      name: "Hire more guards",
-      pros: "More people",
-      cons: "Expensive",
-      rejectionReason: "Guards don't take attendance",
-    },
-  ],
-  step4Budget: "Flexible budget depending on requirements.",
-  step4CostBreakdown: "Negotiable upon discussion.",
-  step5Experience: "I am a skilled developer with many apps.",
-  step5ProofLinks: "https://github.com",
-  step5Constraints: "No major constraints.",
-  revisionCount: 0,
-};
 
 export function usePitchForm(problemId: string, initialRevision = 0) {
   const draftKey = `skillproof_pitch_draft_${problemId}`;
@@ -186,9 +123,6 @@ export function usePitchForm(problemId: string, initialRevision = 0) {
     });
   }, []);
 
-  const loadSample = useCallback((type: "STRONG" | "WEAK") => {
-    setForm(type === "STRONG" ? STRONG_SAMPLE : WEAK_SAMPLE);
-  }, []);
 
   const clearDraft = useCallback(() => {
     try {
@@ -243,7 +177,6 @@ export function usePitchForm(problemId: string, initialRevision = 0) {
     updateAlternative,
     addAlternative,
     removeAlternative,
-    loadSample,
     clearDraft,
     nextStep,
     prevStep,

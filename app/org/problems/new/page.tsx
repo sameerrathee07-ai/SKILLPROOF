@@ -7,10 +7,7 @@ import {
   Building2, 
   ArrowLeft, 
   PlusCircle, 
-  CheckCircle2, 
-  Sparkles,
-  Layers,
-  GraduationCap
+  CheckCircle2 
 } from "lucide-react";
 import { SlideButton } from "@/components/SlideButton";
 
@@ -46,28 +43,6 @@ export default function NewProblemPage() {
     }
     loadOrgs();
   }, []);
-
-  const fillEducationTemplate = (type: "RETENTION" | "SCHEDULING" | "ADMIN") => {
-    if (type === "RETENTION") {
-      setTitle("Weekly Doubt Session Attendance Drop & Early Dropout Alert");
-      setFrictionCategory("STUDENT_RETENTION");
-      setDescription(
-        "Across our coaching batches, attendance in optional Saturday doubt sessions drops by 40% after mid-term assessments. Tutors don't record who attended until Monday morning, losing crucial 48 hours to engage students at risk of abandonment. We need a lightweight mobile check-in that flags consecutive missed doubt sessions and alerts counselors via automated WhatsApp webhook."
-      );
-    } else if (type === "SCHEDULING") {
-      setTitle("Faculty Slot Swapping & Emergency Replacement Notification System");
-      setFrictionCategory("SCHEDULING");
-      setDescription(
-        "When a physics teacher falls ill or gets stuck in traffic, finding a qualified substitute teacher across our 4 center branches currently involves sending messages to 3 separate WhatsApp groups. We need an automated conflict-free slot swap board that alerts available verified faculty and notifies enrolled students via SMS."
-      );
-    } else {
-      setTitle("Robotics & IoT Laboratory Component Inventory Reservation Board");
-      setFrictionCategory("ADMIN_WORKFLOW");
-      setDescription(
-        "Engineering project teams borrow Arduino, Raspberry Pi, and sensor kits without returning components before the semester demo day. We need an equipment booking and quota tracking system that enforces student checkout limits and sends return deadline alerts."
-      );
-    }
-  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -129,39 +104,6 @@ export default function NewProblemPage() {
         <p className="text-sm text-slate-600">
           Describe your operational friction. All student proposals must pass the deterministic 6.0 quality gate before arriving in your vetted inbox.
         </p>
-      </div>
-
-      {/* Quick Fill Templates for Demo */}
-      <div className="p-4 rounded-xl bg-indigo-50/70 border border-indigo-100 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-        <div className="flex items-center gap-2">
-          <GraduationCap className="w-4 h-4 text-brand-600" />
-          <span className="text-xs font-bold text-slate-800">
-            Education Wedge Quick Templates:
-          </span>
-        </div>
-        <div className="flex flex-wrap gap-2">
-          <button
-            type="button"
-            onClick={() => fillEducationTemplate("RETENTION")}
-            className="px-2.5 py-1 rounded-lg text-xs font-semibold bg-white text-indigo-700 hover:bg-indigo-100 border border-indigo-200 transition-colors"
-          >
-            Retention & Absence
-          </button>
-          <button
-            type="button"
-            onClick={() => fillEducationTemplate("SCHEDULING")}
-            className="px-2.5 py-1 rounded-lg text-xs font-semibold bg-white text-indigo-700 hover:bg-indigo-100 border border-indigo-200 transition-colors"
-          >
-            Tutor Scheduling
-          </button>
-          <button
-            type="button"
-            onClick={() => fillEducationTemplate("ADMIN")}
-            className="px-2.5 py-1 rounded-lg text-xs font-semibold bg-white text-indigo-700 hover:bg-indigo-100 border border-indigo-200 transition-colors"
-          >
-            Lab Inventory
-          </button>
-        </div>
       </div>
 
       {/* Posting Form */}
