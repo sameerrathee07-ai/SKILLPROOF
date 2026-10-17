@@ -2,6 +2,7 @@ import { prisma } from "@/lib/db";
 import { evaluatePitch, PitchInput } from "@/lib/scoring/engine";
 import { ValidationError, NotFoundError } from "@/lib/api/errors";
 import { UserService } from "./user.service";
+import { validateFullPitch } from "@/lib/validations/pitch.schema";
 
 export interface SubmitPitchDTO {
   problemId: string;
@@ -20,6 +21,14 @@ export class PitchService {
     }
     if (!dto.problemId) {
       throw new ValidationError("Missing target problem ID.");
+    }
+
+    const validation = validateFullPitch(dto.pitchInput);
+    if (!validation.isValid) {
+      throw new ValidationError(
+        validation.firstError || "Invalid pitch input data.",
+        validation.errors
+      );
     }
 
     const problem = await prisma.problem.findUnique({

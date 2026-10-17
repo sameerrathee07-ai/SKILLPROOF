@@ -19,13 +19,33 @@ vi.mock("@/lib/scoring/engine", () => ({ evaluatePitch: evaluatePitchMock }));
 vi.mock("./user.service", () => ({ UserService: userServiceMock }));
 
 const pitchInput = {
-  problemStatement: "Students can't track progress",
-  proposedSolution: "A dashboard",
-  keyAssumptions: ["Assumption"],
-  targetMarket: "Coaching students",
-  competitiveAdvantage: "Simple",
-  revenueModel: "SaaS",
-  risks: ["Risk"],
+  step1Diagnosis:
+    "Root cause is manual attendance tracking causing delayed feedback and student dropout. The systemic friction lies in paper registers and the lack of real-time alerts.",
+  step2Solution:
+    "Build a PWA dashboard with webhook automation and WhatsApp notifications, backed by a database schema and admin dashboard.",
+  step2Deliverables:
+    "Faculty attendance PWA, counselor dashboard, WhatsApp webhook service, CSV export.",
+  step2Milestones:
+    "Sprint 1: schema and auth. Sprint 2: webhook worker and dashboard. Sprint 3: pilot and deploy.",
+  step3Alternatives: [
+    {
+      name: "Biometric terminals",
+      pros: "automated",
+      cons: "expensive hardware and long queues",
+      rejectionReason: "prohibitive setup cost",
+    },
+    {
+      name: "Off-the-shelf ERP",
+      pros: "immediate",
+      cons: "expensive recurring fees and vendor lock-in",
+      rejectionReason: "too costly",
+    },
+  ],
+  step4Budget: "₹24,000 INR across three milestones.",
+  step4CostBreakdown: "Hosting free tier, WhatsApp API free tier.",
+  step5Experience: "Built attendance portal for 350 members. Proficient in Next.js and Node.js.",
+  step5ProofLinks: "https://github.com/aryan-dev/demo",
+  step5Constraints: "Faculty have variable digital literacy; handle offline caching and privacy.",
 } as any;
 
 describe("PitchService", () => {
@@ -44,6 +64,19 @@ describe("PitchService", () => {
     it("throws ValidationError when pitch input is missing", async () => {
       await expect(
         PitchService.submitAndEvaluate({ problemId: "p1" } as any)
+      ).rejects.toBeInstanceOf(ValidationError);
+    });
+
+    it("throws ValidationError when pitch input is garbage", async () => {
+      const garbageInput = {
+        step1Diagnosis: "asdfgh",
+        step2Solution: "broken",
+        step3Alternatives: [],
+        step4Budget: "test",
+        step5Experience: "idk",
+      };
+      await expect(
+        PitchService.submitAndEvaluate({ problemId: "p1", pitchInput: garbageInput as any })
       ).rejects.toBeInstanceOf(ValidationError);
     });
 

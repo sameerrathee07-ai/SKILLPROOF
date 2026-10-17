@@ -95,19 +95,90 @@ describe("usePitchForm", () => {
     expect(result.current.form.step3Alternatives).toHaveLength(2);
   });
 
-  it("steps forward and backward within 1..5", async () => {
+  it("blocks nextStep when current step is empty or garbage, and sets stepErrors", async () => {
     const { result } = renderHook(() => usePitchForm(PROBLEM_ID));
     await waitFor(() => expect(result.current.isLoaded).toBe(true));
 
+    // Initially empty - blocks progression
+    act(() => {
+      const advanced = result.current.nextStep();
+      expect(advanced).toBe(false);
+    });
+    expect(result.current.currentStep).toBe(1);
+    expect(result.current.stepErrors.step1Diagnosis).toBeDefined();
+
+    // With garbage input - blocks progression
+    act(() => result.current.updateField("step1Diagnosis", "asdfgh"));
+    act(() => {
+      const advanced = result.current.nextStep();
+      expect(advanced).toBe(false);
+    });
+    expect(result.current.currentStep).toBe(1);
+    expect(result.current.stepErrors.step1Diagnosis).toContain("keyboard-mash");
+
+    // Updating field clears error
+    act(() =>
+      result.current.updateField(
+        "step1Diagnosis",
+        "Operational delays in paper register data entry cause dropouts."
+      )
+    );
+    expect(result.current.stepErrors.step1Diagnosis).toBeUndefined();
+
+    // With valid data - advances to Step 2
+    act(() => {
+      const advanced = result.current.nextStep();
+      expect(advanced).toBe(true);
+    });
+    expect(result.current.currentStep).toBe(2);
+  });
+
+  it("steps forward and backward within 1..5 when valid", async () => {
+    const { result } = renderHook(() => usePitchForm(PROBLEM_ID));
+    await waitFor(() => expect(result.current.isLoaded).toBe(true));
+
+    // Populate valid data for steps
+    act(() => {
+      result.current.updateField(
+        "step1Diagnosis",
+        "Operational delays in paper register data entry cause dropouts."
+      );
+      result.current.updateField(
+        "step2Solution",
+        "Build a PWA dashboard with automated webhook alerts and sync."
+      );
+      result.current.updateAlternative(0, "name", "Biometric Scanners");
+      result.current.updateAlternative(0, "pros", "Fully automated without staff");
+      result.current.updateAlternative(0, "cons", "Expensive hardware setup");
+      result.current.updateAlternative(0, "rejectionReason", "Cost prohibitive");
+      result.current.updateAlternative(1, "name", "Commercial ERP");
+      result.current.updateAlternative(1, "pros", "Ready immediately");
+      result.current.updateAlternative(1, "cons", "Recurring subscription fees");
+      result.current.updateAlternative(1, "rejectionReason", "Vendor lock-in");
+      result.current.updateField("step4Budget", "Total Budget: ₹25,000 INR.");
+      result.current.updateField(
+        "step5Experience",
+        "3 years experience building fullstack React and Node applications."
+      );
+    });
+
+    // Step 1 -> 2
     act(() => result.current.nextStep());
+    expect(result.current.currentStep).toBe(2);
+
+    // Step 2 -> 3
     act(() => result.current.nextStep());
     expect(result.current.currentStep).toBe(3);
 
+    // Step 3 -> 2
     act(() => result.current.prevStep());
     expect(result.current.currentStep).toBe(2);
 
-    // Clamp upper bound at 5
+    // Jump to Step 5
     act(() => result.current.goToStep(5));
+    expect(result.current.currentStep).toBe(5);
+
+    // Clamp upper bound at 5
     act(() => result.current.nextStep());
     expect(result.current.currentStep).toBe(5);
 

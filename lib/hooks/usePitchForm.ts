@@ -7,6 +7,7 @@ import {
   checkKnockoutCriteria,
   KnockoutCheckResult,
 } from "@/lib/scoring/engine";
+import { validatePitchStep } from "@/lib/validations/pitch.schema";
 
 export interface PitchFormState {
   step1Diagnosis: string;
@@ -39,8 +40,6 @@ const DEFAULT_STATE: PitchFormState = {
   revisionCount: 0,
 };
 
-
-
 export function usePitchForm(problemId: string, initialRevision = 0) {
   const draftKey = `skillproof_pitch_draft_${problemId}`;
 
@@ -49,6 +48,7 @@ export function usePitchForm(problemId: string, initialRevision = 0) {
   });
 
   const [currentStep, setCurrentStep] = useState(1);
+  const [stepErrors, setStepErrors] = useState<Record<string, string>>({});
   const [isLoaded, setIsLoaded] = useState(false);
 
   // Restore draft from localStorage on mount
@@ -81,15 +81,21 @@ export function usePitchForm(problemId: string, initialRevision = 0) {
     }
   }, [form, draftKey, isLoaded, problemId]);
 
-  // Update simple string field
+  // Update simple string field and clear any error on that field
   const updateField = useCallback(
     <K extends keyof PitchFormState>(field: K, value: PitchFormState[K]) => {
       setForm((prev) => ({ ...prev, [field]: value }));
+      setStepErrors((prev) => {
+        if (!prev[field as string]) return prev;
+        const copy = { ...prev };
+        delete copy[field as string];
+        return copy;
+      });
     },
     []
   );
 
-  // Update specific alternative
+  // Update specific alternative and clear its error
   const updateAlternative = useCallback(
     (index: number, field: keyof AlternativeItem, value: string) => {
       setForm((prev) => {
@@ -98,6 +104,14 @@ export function usePitchForm(problemId: string, initialRevision = 0) {
           updated[index] = { ...updated[index], [field]: value };
         }
         return { ...prev, step3Alternatives: updated };
+      });
+      const errorKey = `step3Alternatives.${index}.${field}`;
+      setStepErrors((prev) => {
+        if (!prev[errorKey] && !prev.step3Alternatives) return prev;
+        const copy = { ...prev };
+        delete copy[errorKey];
+        delete copy.step3Alternatives;
+        return copy;
       });
     },
     []
@@ -123,12 +137,12 @@ export function usePitchForm(problemId: string, initialRevision = 0) {
     });
   }, []);
 
-
   const clearDraft = useCallback(() => {
     try {
       localStorage.removeItem(draftKey);
     } catch {}
     setForm(DEFAULT_STATE);
+    setStepErrors({});
     setCurrentStep(1);
   }, [draftKey]);
 
@@ -156,20 +170,45 @@ export function usePitchForm(problemId: string, initialRevision = 0) {
   );
 
   const nextStep = useCallback(() => {
+    const validation = validatePitchStep(currentStep, form);
+    if (!validation.isValid) {
+      setStepErrors(validation.errors);
+      return false;
+    }
+    setStepErrors({});
     setCurrentStep((prev) => Math.min(prev + 1, 5));
-  }, []);
+    return true;
+  }, [currentStep, form]);
 
   const prevStep = useCallback(() => {
+    setStepErrors({});
     setCurrentStep((prev) => Math.max(prev - 1, 1));
   }, []);
 
   const goToStep = useCallback((step: number) => {
-    if (step >= 1 && step <= 5) setCurrentStep(step);
-  }, []);
+    if (step < 1 || step > 5) return;
+    if (step <= currentStep) {
+      setStepErrors({});
+      setCurrentStep(step);
+      return;
+    }
+    // Block forward skipping if earlier steps fail validation
+    for (let s = currentStep; s < step; s++) {
+      const validation = validatePitchStep(s, form);
+      if (!validation.isValid) {
+        setStepErrors(validation.errors);
+        return;
+      }
+    }
+    setStepErrors({});
+    setCurrentStep(step);
+  }, [currentStep, form]);
 
   return {
     form,
     currentStep,
+    stepErrors,
+    setStepErrors,
     isLoaded,
     pitchInput,
     knockoutStatus,
