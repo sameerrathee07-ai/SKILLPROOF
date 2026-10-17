@@ -26,33 +26,6 @@ SkillProof eliminates low-quality noise through an explainable, deterministic ga
 - **Database & ORM:** SQLite with Prisma (`User`, `Organization`, `Problem`, `Pitch`)
 - **Multi-Tenancy:** Scoped by `organizationId` from day one
 
----
-
-## Getting Started
-
-```bash
-# 1. Install dependencies
-npm install
-
-# 2. Configure environment
-cp .env.example .env
-
-# 3. Push schema to SQLite
-npm run db:push
-
-# 4. Seed sample education data
-npm run db:seed
-
-# 5. Run deterministic Gate Calibration Suite (VAL-1 to VAL-6)
-npm run calibrate
-
-# 6. Start development server
-npm run dev
-```
-
-Visit [http://localhost:3000](http://localhost:3000)
-
----
 
 ## Architecture & Code Organization
 Complete technical architecture and layered design is documented in [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md):
