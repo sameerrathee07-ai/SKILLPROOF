@@ -18,12 +18,13 @@ import { CalibrationReport } from "@/lib/scoring/calibrationData";
 
 export default function CalibrationAdminPage() {
   const [report, setReport] = useState<CalibrationReport | null>(null);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false);
   const [running, setRunning] = useState(false);
   const [expandedId, setExpandedId] = useState<string | null>(null);
 
   const fetchCalibration = async () => {
     setRunning(true);
+    setLoading(true);
     try {
       const res = await fetch("/api/calibrate");
       if (res.ok) {
@@ -37,10 +38,6 @@ export default function CalibrationAdminPage() {
       setRunning(false);
     }
   };
-
-  useEffect(() => {
-    fetchCalibration();
-  }, []);
 
   const toggleExpand = (id: string) => {
     setExpandedId(expandedId === id ? null : id);
@@ -70,7 +67,7 @@ export default function CalibrationAdminPage() {
           className="inline-flex items-center space-x-2 px-5 py-2.5 rounded-xl bg-brand-600 hover:bg-brand-500 text-white text-xs font-bold shadow-md transition-all disabled:opacity-50"
         >
           <RotateCw className={`w-3.5 h-3.5 ${running ? "animate-spin" : ""}`} />
-          <span>{running ? "Running Suite..." : "Re-run Calibration Suite"}</span>
+          <span>{running ? "Running Suite..." : report ? "Re-run Calibration Suite" : "Run Calibration Suite"}</span>
         </button>
       </div>
 
@@ -336,7 +333,26 @@ export default function CalibrationAdminPage() {
             </p>
           </div>
         </div>
-      ) : null}
+      ) : (
+        <div className="rounded-2xl border border-dashed border-slate-300 bg-slate-50/50 p-12 text-center">
+          <div className="mx-auto w-12 h-12 rounded-xl bg-slate-100 border border-slate-200 flex items-center justify-center text-slate-600 mb-4">
+            <Sliders className="w-6 h-6" />
+          </div>
+          <h2 className="text-lg font-bold text-slate-900 mb-1">No Calibration Benchmark Executed</h2>
+          <p className="text-xs text-slate-600 max-w-md mx-auto mb-6">
+            The calibration gate starts clean with no preloaded or prefilled benchmark values. Run the benchmark on demand to test VAL-1 through VAL-6 against the scoring engine.
+          </p>
+          <button
+            type="button"
+            disabled={running}
+            onClick={fetchCalibration}
+            className="inline-flex items-center space-x-2 px-5 py-2.5 rounded-xl bg-brand-600 hover:bg-brand-500 text-white text-xs font-bold shadow-md transition-all disabled:opacity-50"
+          >
+            <RotateCw className={`w-3.5 h-3.5 ${running ? "animate-spin" : ""}`} />
+            <span>Run Calibration Suite</span>
+          </button>
+        </div>
+      )}
     </div>
   );
 }
