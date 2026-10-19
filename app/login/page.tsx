@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import { ShieldCheck, Mail, ArrowRight } from "lucide-react";
 import { useAuth } from "@/lib/auth/AuthContext";
 import { SlideButton } from "@/components/SlideButton";
+import { safeNextPath } from "@/lib/auth/next-path";
 
 export default function LoginPage() {
   const [email, setEmail] = useState("");
@@ -14,11 +15,7 @@ export default function LoginPage() {
   const { login, signInWithGoogle } = useAuth();
   const router = useRouter();
 
-  const nextPath = () => {
-    const next = new URLSearchParams(window.location.search).get("next");
-    // Only same-site paths; "//evil.com" would be an open redirect.
-    return next && next.startsWith("/") && !next.startsWith("//") ? next : "/problems";
-  };
+  const nextPath = () => safeNextPath(window.location.search);
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
