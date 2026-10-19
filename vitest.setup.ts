@@ -7,3 +7,9 @@ vi.mock("next-auth/react", () => ({
   signIn: vi.fn(),
   signOut: vi.fn(),
 }));
+
+// jsdom under the vmThreads pool has no crypto.subtle; Web Crypto keeps auth tests working.
+import { webcrypto } from "node:crypto";
+if (!globalThis.crypto?.subtle) {
+  Object.defineProperty(globalThis, "crypto", { value: webcrypto, configurable: true });
+}
