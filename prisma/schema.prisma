@@ -21,6 +21,7 @@ model User {
   problemsPosted   Problem[] @relation("PostedProblems")
   accounts         Account[]
   sessions         Session[]
+  tokenPurchases   TokenPurchase[]
 }
 
 model Account {
@@ -93,4 +94,15 @@ model Pitch {
   scoreBreakdown String   // JSON string storing dimensional breakdown and actionable feedback
   revisionCount  Int      @default(0)
   createdAt      DateTime @default(now())
+}
+
+model TokenPurchase {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  tier      String
+  amount    Int
+  tokens    Int
+  status    String   @default("PENDING")
+  createdAt DateTime @default(now())
 }
