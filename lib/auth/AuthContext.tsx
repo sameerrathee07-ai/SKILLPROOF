@@ -2,6 +2,7 @@
 
 import React, { createContext, useContext, useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
+import { SessionProvider, useSession, signIn, signOut } from "next-auth/react";
 
 export interface AuthUser {
   id: string;
@@ -10,6 +11,7 @@ export interface AuthUser {
   role: "SOLVER" | "POSTER" | "ADMIN";
   tokens: number;
   credibilityScore: number;
+  image?: string | null;
 }
 
 interface AuthContextType {
@@ -18,6 +20,7 @@ interface AuthContextType {
   login: (email: string) => Promise<boolean>;
   signup: (data: { name: string; email: string; role: "SOLVER" | "POSTER" }) => Promise<boolean>;
   logout: () => void;
+  signInWithGoogle: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType>({
@@ -26,22 +29,23 @@ const AuthContext = createContext<AuthContextType>({
   login: async () => false,
   signup: async () => false,
   logout: () => {},
+  signInWithGoogle: async () => {},
 });
 
 const AUTH_STORAGE_KEY = "skillproof_auth_user";
 
-export function AuthProvider({ children }: { children: React.ReactNode }) {
-  const [user, setUser] = useState<AuthUser | null>(null);
-  const [loading, setLoading] = useState(true);
+function AuthInternal({ children }: { children: React.ReactNode }) {
+  const { data: session, status } = useSession();
+  const [localUser, setLocalUser] = useState<AuthUser | null>(null);
+  const [localLoading, setLocalLoading] = useState(true);
   const router = useRouter();
 
   useEffect(() => {
     try {
       const stored = localStorage.getItem(AUTH_STORAGE_KEY);
       if (stored) {
-        setUser(JSON.parse(stored));
+        setLocalUser(JSON.parse(stored));
       } else {
-        // Default demo fallback if fresh browser session
         const defaultUser: AuthUser = {
           id: "solver_default",
           name: "Aryan Verma",
@@ -50,15 +54,31 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           tokens: 50,
           credibilityScore: 1.2,
         };
-        setUser(defaultUser);
+        setLocalUser(defaultUser);
         localStorage.setItem(AUTH_STORAGE_KEY, JSON.stringify(defaultUser));
       }
     } catch (e) {
       console.error("Failed to load local auth", e);
     } finally {
-      setLoading(false);
+      setLocalLoading(false);
     }
   }, []);
+
+  // NextAuth authenticated session takes precedence
+  let activeUser: AuthUser | null = localUser;
+  if (status === "authenticated" && session?.user) {
+    activeUser = {
+      id: session.user.id || (session.user as any).sub || "google_user",
+      name: session.user.name || "Authenticated User",
+      email: session.user.email || "",
+      role: session.user.role || "SOLVER",
+      tokens: session.user.tokens ?? 50,
+      credibilityScore: session.user.credibilityScore ?? 1.0,
+      image: session.user.image,
+    };
+  }
+
+  const isLoading = status === "loading" ? true : localLoading;
 
   const login = async (email: string) => {
     try {
@@ -72,7 +92,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         alert(data.error || "Login failed");
         return false;
       }
-      setUser(data.user);
+      setLocalUser(data.user);
       localStorage.setItem(AUTH_STORAGE_KEY, JSON.stringify(data.user));
       return true;
     } catch (e) {
@@ -94,7 +114,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         alert(resData.error || "Signup failed");
         return false;
       }
-      setUser(resData.user);
+      setLocalUser(resData.user);
       localStorage.setItem(AUTH_STORAGE_KEY, JSON.stringify(resData.user));
       return true;
     } catch (e) {
@@ -105,15 +125,42 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   };
 
   const logout = () => {
+    // Clear the server session cookie too; otherwise the localStorage-only logout leaves a live session.
+    void fetch("/api/auth/logout", { method: "POST" }).catch(() => {});
     localStorage.removeItem(AUTH_STORAGE_KEY);
-    setUser(null);
-    router.push("/login");
+    setLocalUser(null);
+    if (status === "authenticated") {
+      signOut({ callbackUrl: "/login" });
+    } else {
+      router.push("/login");
+    }
+  };
+
+  const signInWithGoogle = async () => {
+    await signIn("google", { callbackUrl: "/problems" });
   };
 
   return (
-    <AuthContext.Provider value={{ user, loading, login, signup, logout }}>
+    <AuthContext.Provider
+      value={{
+        user: activeUser,
+        loading: isLoading,
+        login,
+        signup,
+        logout,
+        signInWithGoogle,
+      }}
+    >
       {children}
     </AuthContext.Provider>
+  );
+}
+
+export function AuthProvider({ children }: { children: React.ReactNode }) {
+  return (
+    <SessionProvider>
+      <AuthInternal>{children}</AuthInternal>
+    </SessionProvider>
   );
 }
 

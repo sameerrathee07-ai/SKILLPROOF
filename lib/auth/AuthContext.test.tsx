@@ -138,10 +138,12 @@ describe("AuthContext", () => {
 
   it("logs out, clears storage, and redirects to /login", async () => {
     localStorage.setItem(AUTH_STORAGE_KEY, JSON.stringify(fetchedUser));
+    global.fetch = vi.fn().mockResolvedValue({ ok: true, json: async () => ({ success: true }) });
     renderAuth();
     await waitFor(() => expect(screen.getByTestId("loading").textContent).toBe("false"));
 
     fireEvent.click(screen.getByText("logout"));
+    expect(global.fetch).toHaveBeenCalledWith("/api/auth/logout", { method: "POST" });
     expect(screen.getByTestId("user-name").textContent).toBe("none");
     expect(localStorage.getItem(AUTH_STORAGE_KEY)).toBeNull();
     expect(mockPush).toHaveBeenCalledWith("/login");

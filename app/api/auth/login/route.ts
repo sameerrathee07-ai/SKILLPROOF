@@ -1,6 +1,7 @@
 import { prisma } from "@/lib/db";
 import { withErrorHandler, successResponse, errorResponse } from "@/lib/api/response";
 import { AppError } from "@/lib/api/errors";
+import { SESSION_COOKIE, sessionCookieOptions, signSession } from "@/lib/auth/session";
 
 export const POST = withErrorHandler(async (request: Request) => {
   const body = await request.json();
@@ -28,5 +29,11 @@ export const POST = withErrorHandler(async (request: Request) => {
     });
   }
 
-  return successResponse({ user });
+  const response = successResponse({ user });
+  response.cookies.set(
+    SESSION_COOKIE,
+    await signSession({ userId: user.id, role: user.role }),
+    sessionCookieOptions()
+  );
+  return response;
 });

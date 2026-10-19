@@ -1,6 +1,8 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { POST } from "./route";
 
+process.env.SESSION_SECRET = "route-test-secret";
+
 const { prismaMock } = vi.hoisted(() => ({
   prismaMock: { user: { findUnique: vi.fn(), create: vi.fn() } },
 }));
@@ -47,6 +49,21 @@ describe("POST /api/auth/signup", () => {
       },
     });
     expect((await res.json()).user).toEqual(created);
+  });
+
+  it("sets a signed session cookie after signup", async () => {
+    prismaMock.user.findUnique.mockResolvedValue(null);
+    prismaMock.user.create.mockResolvedValue({
+      id: "u9",
+      email: "n@b.com",
+      name: "N",
+      role: "SOLVER",
+    });
+
+    const res = await POST(req({ name: "N", email: "n@b.com" }));
+    const cookie = res.headers.get("set-cookie") ?? "";
+    expect(cookie).toContain("skillproof_session=");
+    expect(cookie).toContain("HttpOnly");
   });
 
   it("maps a POSTER role", async () => {
