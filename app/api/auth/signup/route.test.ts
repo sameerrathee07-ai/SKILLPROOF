@@ -22,14 +22,15 @@ describe("POST /api/auth/signup", () => {
     prismaMock.user.create.mockReset();
   });
 
-  it("returns the existing user when the email is taken", async () => {
+  it("rejects an existing email instead of signing it in", async () => {
     const existing = { id: "u1", email: "x@y.com", name: "X" };
     prismaMock.user.findUnique.mockResolvedValue(existing);
 
     const res = await POST(req({ name: "X", email: "x@y.com" }));
-    expect(res.status).toBe(200);
-    expect(await res.json()).toEqual({ user: existing });
+    expect(res.status).toBe(409);
+    expect((await res.json()).code).toBe("EMAIL_IN_USE");
     expect(prismaMock.user.create).not.toHaveBeenCalled();
+    expect(res.headers.get("set-cookie")).toBeNull();
   });
 
   it("creates a SOLVER by default with a normalized email", async () => {

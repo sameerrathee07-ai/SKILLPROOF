@@ -2,10 +2,18 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 import { POST } from "./route";
 import { PitchService } from "@/lib/services/pitch.service";
 
+const { getRequestUserMock } = vi.hoisted(() => ({
+  getRequestUserMock: vi.fn(),
+}));
+
 vi.mock("@/lib/services/pitch.service", () => ({
   PitchService: {
     submitAndEvaluate: vi.fn(),
   },
+}));
+
+vi.mock("@/lib/auth/request-user", () => ({
+  getRequestUser: getRequestUserMock,
 }));
 
 const mockSubmit = vi.mocked(PitchService.submitAndEvaluate);
@@ -58,6 +66,7 @@ const makeRequest = (body: unknown, problemId = "prob-123") =>
 describe("POST /api/problems/[id]/pitch API Route", () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    getRequestUserMock.mockResolvedValue({ id: "solver-1", role: "SOLVER" });
   });
 
   it("accepts a valid pitch submission, passes to service, and returns 201", async () => {
@@ -71,7 +80,7 @@ describe("POST /api/problems/[id]/pitch API Route", () => {
 
     const res = await makeRequest({
       pitchInput: validPitchInput,
-      solverId: "solver-1",
+      solverId: "spoofed-solver",
       revisionCount: 0,
     });
 
@@ -87,6 +96,16 @@ describe("POST /api/problems/[id]/pitch API Route", () => {
       solverId: "solver-1",
       revisionCount: 0,
     });
+  });
+
+  it("rejects a request without a session with 401", async () => {
+    getRequestUserMock.mockResolvedValue(null);
+
+    const res = await makeRequest({ pitchInput: validPitchInput });
+
+    expect(res.status).toBe(401);
+    expect((await res.json()).code).toBe("UNAUTHORIZED");
+    expect(mockSubmit).not.toHaveBeenCalled();
   });
 
   it("rejects empty submission with 400 and does NOT call scoring service", async () => {

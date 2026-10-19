@@ -44,18 +44,13 @@ function AuthInternal({ children }: { children: React.ReactNode }) {
     try {
       const stored = localStorage.getItem(AUTH_STORAGE_KEY);
       if (stored) {
-        setLocalUser(JSON.parse(stored));
-      } else {
-        const defaultUser: AuthUser = {
-          id: "solver_default",
-          name: "Aryan Verma",
-          email: "aryan@solver.skillproof.dev",
-          role: "SOLVER",
-          tokens: 50,
-          credibilityScore: 1.2,
-        };
-        setLocalUser(defaultUser);
-        localStorage.setItem(AUTH_STORAGE_KEY, JSON.stringify(defaultUser));
+        const parsed = JSON.parse(stored);
+        // Clear the legacy hardcoded account older builds persisted for every visitor.
+        if (parsed?.id === "solver_default") {
+          localStorage.removeItem(AUTH_STORAGE_KEY);
+        } else {
+          setLocalUser(parsed);
+        }
       }
     } catch (e) {
       console.error("Failed to load local auth", e);
@@ -68,7 +63,7 @@ function AuthInternal({ children }: { children: React.ReactNode }) {
   let activeUser: AuthUser | null = localUser;
   if (status === "authenticated" && session?.user) {
     activeUser = {
-      id: session.user.id || (session.user as any).sub || "google_user",
+      id: session.user.id,
       name: session.user.name || "Authenticated User",
       email: session.user.email || "",
       role: session.user.role || "SOLVER",

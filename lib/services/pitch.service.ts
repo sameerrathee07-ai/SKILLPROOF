@@ -6,7 +6,7 @@ import { validateFullPitch } from "@/lib/validations/pitch.schema";
 
 export interface SubmitPitchDTO {
   problemId: string;
-  solverId?: string;
+  solverId: string;
   pitchInput: PitchInput;
   revisionCount?: number;
 }
@@ -38,8 +38,7 @@ export class PitchService {
       throw new NotFoundError(`Problem with id "${dto.problemId}" not found.`);
     }
 
-    // Resolve or provision solver
-    const solver = await UserService.getOrCreateDefaultSolver(dto.solverId);
+    const solver = await UserService.getSolver(dto.solverId);
 
     // Atomic conditional decrement: two concurrent submissions cannot both spend the last token
     const consumed = await prisma.user.updateMany({

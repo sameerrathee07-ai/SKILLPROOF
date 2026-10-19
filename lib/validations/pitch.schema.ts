@@ -395,7 +395,6 @@ export const pitchInputSchema = step1Schema
 // Submission payload schema
 export const pitchSubmissionSchema = z.object({
   problemId: z.string().min(1, "Target problem ID is required."),
-  solverId: z.string().optional(),
   pitchInput: pitchInputSchema,
   revisionCount: z.union([z.number(), z.string()]).optional(),
 });

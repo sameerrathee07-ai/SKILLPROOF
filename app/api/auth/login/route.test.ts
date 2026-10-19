@@ -4,7 +4,7 @@ import { POST } from "./route";
 process.env.SESSION_SECRET = "route-test-secret";
 
 const { prismaMock } = vi.hoisted(() => ({
-  prismaMock: { user: { findUnique: vi.fn(), create: vi.fn() } },
+  prismaMock: { user: { findUnique: vi.fn() } },
 }));
 
 vi.mock("@/lib/db", () => ({ prisma: prismaMock }));
@@ -19,29 +19,24 @@ const req = (body: unknown) =>
 describe("POST /api/auth/login", () => {
   beforeEach(() => {
     prismaMock.user.findUnique.mockReset();
-    prismaMock.user.create.mockReset();
   });
 
-  it("returns the existing user without creating", async () => {
+  it("returns the existing user", async () => {
     const existing = { id: "u1", email: "x@y.com", name: "X" };
     prismaMock.user.findUnique.mockResolvedValue(existing);
 
     const res = await POST(req({ email: "x@y.com" }));
     expect(res.status).toBe(200);
     expect(await res.json()).toEqual({ user: existing });
-    expect(prismaMock.user.create).not.toHaveBeenCalled();
   });
 
-  it("creates a user with a normalized email when not found", async () => {
+  it("returns 401 when the email is not registered", async () => {
     prismaMock.user.findUnique.mockResolvedValue(null);
-    const created = { id: "u2", email: "a@b.com", name: "a", role: "SOLVER" };
-    prismaMock.user.create.mockResolvedValue(created);
 
     const res = await POST(req({ email: "  A@B.com  " }));
-    expect(res.status).toBe(200);
+    expect(res.status).toBe(401);
+    expect((await res.json()).code).toBe("UNAUTHORIZED");
     expect(prismaMock.user.findUnique).toHaveBeenCalledWith({ where: { email: "a@b.com" } });
-    expect(prismaMock.user.create).toHaveBeenCalled();
-    expect((await res.json()).user).toEqual(created);
   });
 
   it("sets a signed session cookie on success", async () => {

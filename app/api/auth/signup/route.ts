@@ -17,13 +17,11 @@ export const POST = withErrorHandler(async (request: Request) => {
   });
 
   if (existing) {
-    const response = successResponse({ user: existing });
-    response.cookies.set(
-      SESSION_COOKIE,
-      await signSession({ userId: existing.id, role: existing.role }),
-      sessionCookieOptions()
+    throw new AppError(
+      "An account with this email already exists. Sign in instead.",
+      409,
+      "EMAIL_IN_USE"
     );
-    return response;
   }
 
   const user = await prisma.user.create({

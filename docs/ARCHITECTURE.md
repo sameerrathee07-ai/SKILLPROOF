@@ -58,8 +58,7 @@ c:\GITDESK\SKILLPROOF\
 │
 ├── prisma/
 │   ├── schema.prisma                 # SQLite schema (User, Organization, Problem, Pitch)
-│   ├── dev.db                        # Local database
-│   └── seed.ts                       # Realistic seed data
+│   └── migrations/                   # Deployable schema history
 │
 ├── scripts/
 │   └── calibrate.ts                  # CLI runner for VAL-1 to VAL-6 assertions
@@ -148,8 +147,8 @@ npm run dev
 # 2. Run deterministic gate calibration test suite
 npm run calibrate
 
-# 3. Seed demo data
-npm run db:seed
+# 3. Create/update a database from committed migrations
+npm run db:deploy
 
 # 4. Typecheck codebase
 npx tsc --noEmit

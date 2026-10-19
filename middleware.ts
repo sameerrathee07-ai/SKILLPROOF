@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { SESSION_COOKIE, verifySession } from "./lib/auth/session";
+import { getToken } from "next-auth/jwt";
 
 export async function middleware(request: NextRequest) {
   const { pathname, search } = request.nextUrl;
@@ -9,10 +10,28 @@ export async function middleware(request: NextRequest) {
   const isPitch = /^\/problems\/[^/]+\/pitch(\/|$)/.test(pathname);
   if (!isAdmin && !isOrg && !isPitch) return NextResponse.next();
 
-  // Signature check only: the edge runtime cannot reach Prisma/SQLite. The
-  // user-exists check lives in getSessionUser for Node routes.
-  const session = await verifySession(request.cookies.get(SESSION_COOKIE)?.value);
-  if (!session) {
+  let role: string | undefined;
+
+  // 1. Check custom signed session cookie (used by developer sign-in)
+  const customSession = await verifySession(request.cookies.get(SESSION_COOKIE)?.value);
+  if (customSession) {
+    role = customSession.role;
+  } else {
+    // 2. Check NextAuth JWT token (used by Google OAuth)
+    try {
+      const nextAuthToken = await getToken({
+        req: request,
+        secret: process.env.NEXTAUTH_SECRET,
+      });
+      if (nextAuthToken) {
+        role = (nextAuthToken.role as string) || "SOLVER";
+      }
+    } catch {
+      // Ignored if token cannot be decoded
+    }
+  }
+
+  if (!role) {
     const url = request.nextUrl.clone();
     url.pathname = "/login";
     url.search = `?next=${encodeURIComponent(pathname + search)}`;
@@ -20,10 +39,10 @@ export async function middleware(request: NextRequest) {
   }
 
   const allowed = isAdmin
-    ? session.role === "ADMIN"
+    ? role === "ADMIN"
     : isOrg
-      ? session.role === "POSTER" || session.role === "ADMIN"
-      : session.role === "SOLVER";
+      ? role === "POSTER" || role === "ADMIN"
+      : role === "SOLVER";
   return allowed ? NextResponse.next() : NextResponse.redirect(new URL("/", request.url));
 }
 

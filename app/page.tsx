@@ -181,12 +181,12 @@ export default async function HomePage() {
         </div>
       </div>
 
-      {/* Recent Seeded Education Challenges */}
+      {/* Recent Education Challenges */}
       <div className="space-y-4">
         <div className="flex items-center justify-between">
           <div>
             <h2 className="text-xl font-bold text-slate-900">Active Education Challenges</h2>
-            <p className="text-xs text-slate-500">Directly posted by verified education partners</p>
+            <p className="text-xs text-slate-500">Posted by education partners</p>
           </div>
           <Link
             href="/problems"

@@ -40,15 +40,6 @@ export default function LoginPage() {
     }
   };
 
-  const quickLogin = async (demoEmail: string) => {
-    setSubmitting(true);
-    const success = await login(demoEmail);
-    setSubmitting(false);
-    if (success) {
-      router.push(nextPath());
-    }
-  };
-
   return (
     <div className="max-w-md mx-auto py-12 px-4">
       <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-8 space-y-6">
@@ -97,7 +88,7 @@ export default function LoginPage() {
           <div className="relative flex items-center justify-center py-2">
             <div className="border-t border-slate-200 w-full" />
             <span className="bg-white px-3 text-[11px] font-semibold text-slate-400 uppercase tracking-wider shrink-0">
-              or developer sign in
+              or sign in with email
             </span>
             <div className="border-t border-slate-200 w-full" />
           </div>
@@ -114,7 +105,7 @@ export default function LoginPage() {
                 type="email"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                placeholder="aryan@solver.skillproof.dev"
+                placeholder="you@organization.edu"
                 required
                 className="w-full pl-10 pr-4 py-2.5 text-sm rounded-xl border border-slate-300 focus:ring-2 focus:ring-slate-900 focus:border-slate-900 transition-all"
               />
@@ -132,32 +123,6 @@ export default function LoginPage() {
             {submitting ? "Signing In..." : "Sign In with Email"}
           </SlideButton>
         </form>
-
-        {/* Quick Demo Accounts */}
-        <div className="pt-4 border-t border-slate-100 space-y-2.5">
-          <p className="text-[11px] font-bold text-slate-400 uppercase tracking-wider text-center">
-            One-Click Quick Login
-          </p>
-          <div className="grid grid-cols-2 gap-2 text-xs">
-            <button
-              type="button"
-              onClick={() => quickLogin("aryan@solver.skillproof.dev")}
-              className="p-2.5 rounded-lg border border-slate-200 bg-slate-50 hover:bg-slate-100 text-left transition"
-            >
-              <div className="font-bold text-slate-800">Aryan Verma</div>
-              <div className="text-[10px] text-emerald-600 font-semibold">Student Solver</div>
-            </button>
-
-            <button
-              type="button"
-              onClick={() => quickLogin("sharma@apexcoaching.edu")}
-              className="p-2.5 rounded-lg border border-slate-200 bg-slate-50 hover:bg-slate-100 text-left transition"
-            >
-              <div className="font-bold text-slate-800">Director Sharma</div>
-              <div className="text-[10px] text-blue-600 font-semibold">Org Poster</div>
-            </button>
-          </div>
-        </div>
 
         {/* Signup Link */}
         <div className="text-center text-xs text-slate-500 pt-2">

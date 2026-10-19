@@ -10,15 +10,6 @@ vi.mock("next/navigation", () => ({
 
 const AUTH_STORAGE_KEY = "skillproof_auth_user";
 
-const defaultUser: AuthUser = {
-  id: "solver_default",
-  name: "Aryan Verma",
-  email: "aryan@solver.skillproof.dev",
-  role: "SOLVER",
-  tokens: 50,
-  credibilityScore: 1.2,
-};
-
 const fetchedUser: AuthUser = {
   id: "u1",
   name: "Test User",
@@ -66,11 +57,29 @@ describe("AuthContext", () => {
     vi.restoreAllMocks();
   });
 
-  it("seeds a default demo user when nothing is stored", async () => {
+  it("stays signed out when nothing is stored", async () => {
     renderAuth();
     await waitFor(() => expect(screen.getByTestId("loading").textContent).toBe("false"));
-    expect(screen.getByTestId("user-name").textContent).toBe(defaultUser.name);
-    expect(JSON.parse(localStorage.getItem(AUTH_STORAGE_KEY) || "{}").name).toBe(defaultUser.name);
+    expect(screen.getByTestId("user-name").textContent).toBe("none");
+    expect(localStorage.getItem(AUTH_STORAGE_KEY)).toBeNull();
+  });
+
+  it("clears the demo user persisted by older builds", async () => {
+    localStorage.setItem(
+      AUTH_STORAGE_KEY,
+      JSON.stringify({
+        id: "solver_default",
+        name: "Aryan Verma",
+        email: "aryan@solver.skillproof.dev",
+        role: "SOLVER",
+        tokens: 50,
+        credibilityScore: 1.2,
+      })
+    );
+    renderAuth();
+    await waitFor(() => expect(screen.getByTestId("loading").textContent).toBe("false"));
+    expect(screen.getByTestId("user-name").textContent).toBe("none");
+    expect(localStorage.getItem(AUTH_STORAGE_KEY)).toBeNull();
   });
 
   it("restores a stored user on mount", async () => {
@@ -97,7 +106,7 @@ describe("AuthContext", () => {
 
     fireEvent.click(screen.getByText("login"));
     await waitFor(() => expect(alertMock).toHaveBeenCalledWith("Invalid credentials"));
-    expect(screen.getByTestId("user-name").textContent).toBe(defaultUser.name);
+    expect(screen.getByTestId("user-name").textContent).toBe("none");
   });
 
   it("alerts on network error during login", async () => {

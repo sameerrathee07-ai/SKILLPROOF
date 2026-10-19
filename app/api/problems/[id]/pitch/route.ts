@@ -1,7 +1,8 @@
 import { PitchService } from "@/lib/services/pitch.service";
 import { withErrorHandler, successResponse } from "@/lib/api/response";
 import { validateFullPitch } from "@/lib/validations/pitch.schema";
-import { ValidationError } from "@/lib/api/errors";
+import { UnauthorizedError, ValidationError } from "@/lib/api/errors";
+import { getRequestUser } from "@/lib/auth/request-user";
 
 export const POST = withErrorHandler(
   async (request: Request, { params }: { params: { id: string } }) => {
@@ -9,8 +10,13 @@ export const POST = withErrorHandler(
       throw new ValidationError("Missing target problem ID.");
     }
 
+    const user = await getRequestUser();
+    if (!user) {
+      throw new UnauthorizedError("Sign in to submit a pitch.");
+    }
+
     const body = await request.json();
-    const { pitchInput, solverId, revisionCount } = body;
+    const { pitchInput, revisionCount } = body;
 
     const validation = validateFullPitch(pitchInput);
     if (!validation.isValid) {
@@ -23,7 +29,7 @@ export const POST = withErrorHandler(
     const result = await PitchService.submitAndEvaluate({
       problemId: params.id,
       pitchInput,
-      solverId,
+      solverId: user.id,
       revisionCount,
     });
 

@@ -12,8 +12,6 @@ export interface AppConfig {
   gate: {
     passThreshold: number; // Quality score threshold (default: 6.0)
     minEffortChars: number; // Minimum pitch characters (default: 200)
-    defaultSolverTokens: number;
-    initialCredibilityScore: number;
   };
 }
 
@@ -26,7 +24,5 @@ export const env: AppConfig = {
   gate: {
     passThreshold: Number(process.env.NEXT_PUBLIC_GATE_THRESHOLD) || 6.0,
     minEffortChars: Number(process.env.GATE_MIN_EFFORT_CHARS) || 200,
-    defaultSolverTokens: 50,
-    initialCredibilityScore: 1.0,
   },
 };

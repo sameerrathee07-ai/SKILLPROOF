@@ -53,5 +53,5 @@ export const authOptions: NextAuthOptions = {
   pages: {
     signIn: "/login",
   },
-  secret: process.env.NEXTAUTH_SECRET || "skillproof_development_secret_32_chars_long_minimum",
+  secret: process.env.NEXTAUTH_SECRET,
 };

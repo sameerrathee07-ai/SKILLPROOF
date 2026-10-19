@@ -36,7 +36,8 @@ Update your production `.env` / deployment environment:
 
 ```env
 NEXT_PUBLIC_APP_URL="https://skillproof.org"
-DATABASE_URL="file:./prisma/prod.db"
+# SQLite paths are relative to prisma/schema.prisma
+DATABASE_URL="file:./prod.db"
 NODE_ENV="production"
 PORT=3000
 ```

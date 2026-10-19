@@ -11,7 +11,7 @@
     "test:watch": "vitest",
     "test:coverage": "vitest run --coverage",
     "db:push": "prisma db push",
-    "db:seed": "tsx prisma/seed.ts",
+    "db:deploy": "prisma migrate deploy",
     "calibrate": "tsx scripts/calibrate.ts"
   },
   "dependencies": {

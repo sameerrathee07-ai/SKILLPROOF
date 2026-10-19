@@ -39,9 +39,9 @@ export function errorResponse(error: unknown) {
  * Higher-order wrapper for Next.js route handlers
  */
 export function withErrorHandler<T = any>(
-  handler: (request: Request, context: T) => Promise<NextResponse>
+  handler: (request: Request, context?: T) => Promise<NextResponse>
 ) {
-  return async (request: Request, context: T): Promise<NextResponse> => {
+  return async (request: Request, context?: T): Promise<NextResponse> => {
     try {
       return await handler(request, context);
     } catch (error) {

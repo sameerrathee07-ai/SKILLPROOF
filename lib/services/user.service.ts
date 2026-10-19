@@ -1,5 +1,5 @@
 import { prisma } from "@/lib/db";
-import { env } from "@/lib/config/env";
+import { NotFoundError, ValidationError } from "@/lib/api/errors";
 
 export class UserService {
   /**
@@ -12,33 +12,20 @@ export class UserService {
   }
 
   /**
-   * Get active solver or seed default demo solver
+   * Get the signed-in solver. Never provisions or substitutes another account.
    */
-  static async getOrCreateDefaultSolver(solverId?: string) {
-    if (solverId) {
-      const existing = await prisma.user.findUnique({
-        where: { id: solverId },
-      });
-      if (existing) return existing;
+  static async getSolver(solverId: string) {
+    if (!solverId) {
+      throw new ValidationError("A signed-in solver is required.");
     }
 
-    const defaultSolver = await prisma.user.findFirst({
-      where: { role: "SOLVER" },
+    const solver = await prisma.user.findUnique({
+      where: { id: solverId },
     });
-
-    if (defaultSolver) {
-      return defaultSolver;
+    if (!solver) {
+      throw new NotFoundError("Solver account not found.");
     }
-
-    return prisma.user.create({
-      data: {
-        email: "student.solver@skillproof.dev",
-        name: "Aryan Verma",
-        role: "SOLVER",
-        tokens: env.gate.defaultSolverTokens,
-        credibilityScore: env.gate.initialCredibilityScore,
-      },
-    });
+    return solver;
   }
 
   /**
