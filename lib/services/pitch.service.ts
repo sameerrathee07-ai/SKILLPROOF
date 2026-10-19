@@ -133,7 +133,7 @@ export class PitchService {
   /**
    * Get organization vetted proposals inbox (shows only pitches passing quality gate)
    */
-  static async getVettedInbox(problemId: string) {
+  static async getVettedInbox(problemId: string, requester?: { id: string; role: string }) {
     const problem = await prisma.problem.findUnique({
       where: { id: problemId },
       include: {
@@ -142,6 +142,11 @@ export class PitchService {
     });
 
     if (!problem) {
+      throw new NotFoundError(`Problem with id "${problemId}" not found.`);
+    }
+
+    // Same "not found" message for unauthorized readers: do not reveal the problem exists.
+    if (!requester || (requester.role !== "ADMIN" && problem.postedById !== requester.id)) {
       throw new NotFoundError(`Problem with id "${problemId}" not found.`);
     }
 

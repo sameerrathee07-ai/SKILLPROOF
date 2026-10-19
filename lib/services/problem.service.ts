@@ -9,6 +9,7 @@ export interface CreateProblemInput {
   organizationId?: string;
   orgName?: string;
   orgType?: string;
+  postedById?: string;
 }
 
 export interface ProblemFilter {
@@ -112,6 +113,7 @@ export class ProblemService {
         description: input.description.trim(),
         frictionCategory: input.frictionCategory.trim(),
         organizationId,
+        postedById: input.postedById ?? null,
         status: "OPEN",
       },
       include: {

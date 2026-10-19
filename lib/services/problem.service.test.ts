@@ -125,12 +125,29 @@ describe("ProblemService", () => {
           description: "Description",
           frictionCategory: "Grading",
           organizationId: "o1",
+          postedById: null,
           status: "OPEN",
         },
         include: { organization: true },
       });
       expect(result).toEqual({ id: "p1" });
       expect(organizationServiceMock.findOrCreateOrganization).not.toHaveBeenCalled();
+    });
+
+    it("stores the poster who created the problem", async () => {
+      prismaMock.problem.create.mockResolvedValue({ id: "p4" });
+
+      await ProblemService.createProblem({
+        title: "Title",
+        description: "Description",
+        frictionCategory: "Grading",
+        organizationId: "o1",
+        postedById: "poster-1",
+      });
+
+      expect(prismaMock.problem.create).toHaveBeenCalledWith(
+        expect.objectContaining({ data: expect.objectContaining({ postedById: "poster-1" }) })
+      );
     });
 
     it("creates or finds a fallback organization when none provided", async () => {

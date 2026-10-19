@@ -14,6 +14,7 @@ import {
 } from "lucide-react";
 import { ProposalCard } from "@/components/ProposalCard";
 import { PitchService } from "@/lib/services/pitch.service";
+import { getSessionUser } from "@/lib/auth/session";
 
 export const dynamic = "force-dynamic";
 
@@ -24,7 +25,8 @@ export default async function VettedInboxPage({
 }) {
   let inboxData;
   try {
-    inboxData = await PitchService.getVettedInbox(params.id);
+    const user = await getSessionUser();
+    inboxData = await PitchService.getVettedInbox(params.id, user ? { id: user.id, role: user.role } : undefined);
   } catch {
     return (
       <div className="py-24 text-center max-w-md mx-auto space-y-4">

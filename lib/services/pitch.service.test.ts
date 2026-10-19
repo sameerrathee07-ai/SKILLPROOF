@@ -259,7 +259,11 @@ describe("PitchService", () => {
     });
 
     it("returns vetted proposals and blocked noise count", async () => {
-      prismaMock.problem.findUnique.mockResolvedValue({ id: "p1", organization: { id: "o1" } });
+      prismaMock.problem.findUnique.mockResolvedValue({
+        id: "p1",
+        postedById: "poster-1",
+        organization: { id: "o1" },
+      });
       prismaMock.pitch.findMany.mockResolvedValue([
         {
           id: "pitch-1",
@@ -269,7 +273,7 @@ describe("PitchService", () => {
       ]);
       prismaMock.pitch.count.mockResolvedValue(3);
 
-      const result = await PitchService.getVettedInbox("p1");
+      const result = await PitchService.getVettedInbox("p1", { id: "poster-1", role: "POSTER" });
 
       expect(prismaMock.pitch.findMany).toHaveBeenCalledWith({
         where: { problemId: "p1", passed: true },
@@ -283,16 +287,68 @@ describe("PitchService", () => {
     });
 
     it("parses malformed pitch JSON safely", async () => {
-      prismaMock.problem.findUnique.mockResolvedValue({ id: "p1" });
+      prismaMock.problem.findUnique.mockResolvedValue({ id: "p1", postedById: "poster-1" });
       prismaMock.pitch.findMany.mockResolvedValue([
         { id: "pitch-1", stepData: "{bad", scoreBreakdown: "{also bad" },
       ]);
       prismaMock.pitch.count.mockResolvedValue(1);
 
-      const result = await PitchService.getVettedInbox("p1");
+      const result = await PitchService.getVettedInbox("p1", { id: "poster-1", role: "POSTER" });
 
       expect(result.proposals[0].stepDataParsed).toBeNull();
       expect(result.proposals[0].scoreBreakdownParsed).toBeNull();
+    });
+
+    it("allows the poster who created the problem", async () => {
+      prismaMock.problem.findUnique.mockResolvedValue({ id: "p1", postedById: "poster-1" });
+      prismaMock.pitch.findMany.mockResolvedValue([]);
+      prismaMock.pitch.count.mockResolvedValue(0);
+
+      const result = await PitchService.getVettedInbox("p1", { id: "poster-1", role: "POSTER" });
+
+      expect(result.vettedCount).toBe(0);
+    });
+
+    it("allows an admin on someone else's problem", async () => {
+      prismaMock.problem.findUnique.mockResolvedValue({ id: "p1", postedById: "poster-1" });
+      prismaMock.pitch.findMany.mockResolvedValue([]);
+      prismaMock.pitch.count.mockResolvedValue(0);
+
+      const result = await PitchService.getVettedInbox("p1", { id: "admin-1", role: "ADMIN" });
+
+      expect(result.vettedCount).toBe(0);
+    });
+
+    it("hides the problem from a different poster", async () => {
+      prismaMock.problem.findUnique.mockResolvedValue({ id: "p1", postedById: "poster-1" });
+
+      await expect(
+        PitchService.getVettedInbox("p1", { id: "poster-2", role: "POSTER" })
+      ).rejects.toBeInstanceOf(NotFoundError);
+    });
+
+    it("hides the problem from a solver", async () => {
+      prismaMock.problem.findUnique.mockResolvedValue({ id: "p1", postedById: "poster-1" });
+
+      await expect(
+        PitchService.getVettedInbox("p1", { id: "solver-1", role: "SOLVER" })
+      ).rejects.toBeInstanceOf(NotFoundError);
+    });
+
+    it("allows an admin on a problem with no poster recorded", async () => {
+      prismaMock.problem.findUnique.mockResolvedValue({ id: "p1", postedById: null });
+      prismaMock.pitch.findMany.mockResolvedValue([]);
+      prismaMock.pitch.count.mockResolvedValue(0);
+
+      const result = await PitchService.getVettedInbox("p1", { id: "admin-1", role: "ADMIN" });
+
+      expect(result.vettedCount).toBe(0);
+    });
+
+    it("hides the problem from a request without a session", async () => {
+      prismaMock.problem.findUnique.mockResolvedValue({ id: "p1", postedById: "poster-1" });
+
+      await expect(PitchService.getVettedInbox("p1")).rejects.toBeInstanceOf(NotFoundError);
     });
   });
 });

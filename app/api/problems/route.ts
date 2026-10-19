@@ -1,5 +1,6 @@
 import { ProblemService } from "@/lib/services/problem.service";
 import { withErrorHandler, successResponse } from "@/lib/api/response";
+import { getSessionUser } from "@/lib/auth/session";
 
 export const GET = withErrorHandler(async (request: Request) => {
   const { searchParams } = new URL(request.url);
@@ -16,6 +17,7 @@ export const GET = withErrorHandler(async (request: Request) => {
 
 export const POST = withErrorHandler(async (request: Request) => {
   const body = await request.json();
-  const problem = await ProblemService.createProblem(body);
+  const user = await getSessionUser();
+  const problem = await ProblemService.createProblem({ ...body, postedById: user?.id });
   return successResponse(problem, 201);
 });

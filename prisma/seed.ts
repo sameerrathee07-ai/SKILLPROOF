@@ -79,6 +79,7 @@ async function main() {
   const problem1 = await prisma.problem.create({
     data: {
       organizationId: orgApex.id,
+      postedById: posterSharma.id,
       title: "Batch-wise Attendance & Drop-out Early Warning Trigger",
       description:
         "Across our 12 offline JEE batches (650+ students), attendance drops precede course abandonment by 2-3 weeks. Faculty mark attendance on paper registers, leading to a 4-day lag before admin or counselors notice consecutive absences. We need a lightweight system where faculty or QR/biometric tap syncs instantly, detects 3 consecutive missed lectures, and alerts student counselors and parents via automated WhatsApp webhook before students fall irrecoverably behind.",
@@ -90,6 +91,7 @@ async function main() {
   const problem2 = await prisma.problem.create({
     data: {
       organizationId: orgHorizon.id,
+      postedById: posterSharma.id,
       title: "Parent-Tutor Progress Sync & Rescheduling Bottleneck",
       description:
         "We coordinate 40 part-time tutors delivering 1-on-1 and small group batches for Class 9-12 students. Last-minute exam postponements and tutor sickness cause 30+ rescheduling disputes each week via frantic WhatsApp messages. We need an automated conflict-free slot rescheduling workflow with parent SMS/WhatsApp confirmations and faculty availability calendars.",
@@ -101,6 +103,7 @@ async function main() {
   const problem3 = await prisma.problem.create({
     data: {
       organizationId: orgCollege.id,
+      postedById: posterSharma.id,
       title: "Hardware Lab & GPU Rig Equipment Booking Allocation",
       description:
         "Our AI/ML lab features 4 multi-GPU workstations and 30 IoT embedded sensor kits. Final-year students hoard workstation access without utilizing compute, while other teams fail project milestone deadlines due to blocked slots. We require a transparent quota-based reservation portal with time-bounded job locks and department head override capabilities.",
