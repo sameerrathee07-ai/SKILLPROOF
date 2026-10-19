@@ -6,6 +6,7 @@ const { prismaMock, userServiceMock, evaluatePitchMock } = vi.hoisted(() => ({
   prismaMock: {
     problem: { findUnique: vi.fn() },
     pitch: { create: vi.fn(), findUnique: vi.fn(), findMany: vi.fn(), count: vi.fn() },
+    user: { updateMany: vi.fn(), findUnique: vi.fn() },
   },
   userServiceMock: {
     getOrCreateDefaultSolver: vi.fn(),
@@ -55,6 +56,8 @@ describe("PitchService", () => {
     prismaMock.pitch.findUnique.mockReset();
     prismaMock.pitch.findMany.mockReset();
     prismaMock.pitch.count.mockReset();
+    prismaMock.user.updateMany.mockReset();
+    prismaMock.user.findUnique.mockReset();
     userServiceMock.getOrCreateDefaultSolver.mockReset();
     userServiceMock.rewardSolverCredibility.mockReset();
     evaluatePitchMock.mockReset();
@@ -96,6 +99,8 @@ describe("PitchService", () => {
     it("persists a pitch and rewards solver when quality gate passes", async () => {
       prismaMock.problem.findUnique.mockResolvedValue({ id: "p1" });
       userServiceMock.getOrCreateDefaultSolver.mockResolvedValue({ id: "solver-1" });
+      prismaMock.user.updateMany.mockResolvedValue({ count: 1 });
+      prismaMock.user.findUnique.mockResolvedValue({ tokens: 44 });
       evaluatePitchMock.mockReturnValue({ overallScore: 85, passed: true, knockedOut: false });
       prismaMock.pitch.create.mockResolvedValue({ id: "pitch-1" });
       userServiceMock.rewardSolverCredibility.mockResolvedValue({ id: "solver-1", credibilityScore: 1.1 });
@@ -125,6 +130,8 @@ describe("PitchService", () => {
     it("does not reward solver when quality gate does not pass", async () => {
       prismaMock.problem.findUnique.mockResolvedValue({ id: "p1" });
       userServiceMock.getOrCreateDefaultSolver.mockResolvedValue({ id: "solver-1" });
+      prismaMock.user.updateMany.mockResolvedValue({ count: 1 });
+      prismaMock.user.findUnique.mockResolvedValue({ tokens: 44 });
       evaluatePitchMock.mockReturnValue({ overallScore: 40, passed: false, knockedOut: true });
       prismaMock.pitch.create.mockResolvedValue({ id: "pitch-2" });
 
@@ -136,6 +143,8 @@ describe("PitchService", () => {
     it("defaults revisionCount to 0 when not provided", async () => {
       prismaMock.problem.findUnique.mockResolvedValue({ id: "p1" });
       userServiceMock.getOrCreateDefaultSolver.mockResolvedValue({ id: "solver-1" });
+      prismaMock.user.updateMany.mockResolvedValue({ count: 1 });
+      prismaMock.user.findUnique.mockResolvedValue({ tokens: 44 });
       evaluatePitchMock.mockReturnValue({ overallScore: 50, passed: false, knockedOut: false });
       prismaMock.pitch.create.mockResolvedValue({ id: "pitch-3" });
 
@@ -144,6 +153,69 @@ describe("PitchService", () => {
       expect(prismaMock.pitch.create).toHaveBeenCalledWith({
         data: expect.objectContaining({ revisionCount: 0 }),
       });
+    });
+
+    it("deducts one token before evaluating and returns the remaining balance", async () => {
+      prismaMock.problem.findUnique.mockResolvedValue({ id: "p1" });
+      userServiceMock.getOrCreateDefaultSolver.mockResolvedValue({ id: "solver-1" });
+      prismaMock.user.updateMany.mockResolvedValue({ count: 1 });
+      prismaMock.user.findUnique.mockResolvedValue({ tokens: 44 });
+      evaluatePitchMock.mockReturnValue({ overallScore: 85, passed: true, knockedOut: false });
+      prismaMock.pitch.create.mockResolvedValue({ id: "pitch-1" });
+      userServiceMock.rewardSolverCredibility.mockResolvedValue({ id: "solver-1", credibilityScore: 1.1 });
+
+      const result = await PitchService.submitAndEvaluate({
+        problemId: "p1",
+        solverId: "solver-1",
+        pitchInput,
+      });
+
+      expect(prismaMock.user.updateMany).toHaveBeenCalledWith({
+        where: { id: "solver-1", tokens: { gte: 1 } },
+        data: { tokens: { decrement: 1 } },
+      });
+      expect(prismaMock.user.updateMany.mock.invocationCallOrder[0]).toBeLessThan(
+        evaluatePitchMock.mock.invocationCallOrder[0]
+      );
+      expect(result.tokensRemaining).toBe(44);
+      expect(prismaMock.pitch.create).toHaveBeenCalledTimes(1);
+    });
+
+    it("throws ValidationError before the gate when the solver has no tokens", async () => {
+      prismaMock.problem.findUnique.mockResolvedValue({ id: "p1" });
+      userServiceMock.getOrCreateDefaultSolver.mockResolvedValue({ id: "solver-1" });
+      prismaMock.user.updateMany.mockResolvedValue({ count: 0 });
+      evaluatePitchMock.mockReturnValue({ overallScore: 40, passed: false, knockedOut: false });
+      prismaMock.pitch.create.mockResolvedValue({ id: "pitch-1" });
+
+      await expect(
+        PitchService.submitAndEvaluate({ problemId: "p1", solverId: "solver-1", pitchInput })
+      ).rejects.toBeInstanceOf(ValidationError);
+
+      expect(evaluatePitchMock).not.toHaveBeenCalled();
+      expect(prismaMock.pitch.create).not.toHaveBeenCalled();
+    });
+
+    it("does not refund the token when the pitch passes", async () => {
+      prismaMock.problem.findUnique.mockResolvedValue({ id: "p1" });
+      userServiceMock.getOrCreateDefaultSolver.mockResolvedValue({ id: "solver-1" });
+      prismaMock.user.updateMany.mockResolvedValue({ count: 1 });
+      prismaMock.user.findUnique.mockResolvedValue({ tokens: 44 });
+      evaluatePitchMock.mockReturnValue({ overallScore: 85, passed: true, knockedOut: false });
+      prismaMock.pitch.create.mockResolvedValue({ id: "pitch-1" });
+      userServiceMock.rewardSolverCredibility.mockResolvedValue({ id: "solver-1", credibilityScore: 1.1 });
+
+      const result = await PitchService.submitAndEvaluate({
+        problemId: "p1",
+        solverId: "solver-1",
+        pitchInput,
+      });
+
+      expect(prismaMock.user.updateMany).toHaveBeenCalledTimes(1);
+      expect(prismaMock.user.updateMany).toHaveBeenCalledWith(
+        expect.objectContaining({ data: { tokens: { decrement: 1 } } })
+      );
+      expect(result.tokensRemaining).toBe(44);
     });
   });
 

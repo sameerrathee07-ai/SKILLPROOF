@@ -158,6 +158,12 @@ export default function PitchResultPage() {
                 : "Your submission met minimum non-negotiables but scored below the 6.0 threshold. Review the dimensional feedback and refine your proposal."}
             </p>
 
+            {pitchData?.tokensRemaining != null && (
+              <p className="text-xs font-semibold text-slate-300">
+                Tokens remaining: {pitchData.tokensRemaining}
+              </p>
+            )}
+
             {/* Credibility Score Reward or Revise Option */}
             {passed ? (
               <div className="pt-2 flex items-center gap-3">

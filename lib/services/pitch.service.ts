@@ -41,6 +41,22 @@ export class PitchService {
     // Resolve or provision solver
     const solver = await UserService.getOrCreateDefaultSolver(dto.solverId);
 
+    // Atomic conditional decrement: two concurrent submissions cannot both spend the last token
+    const consumed = await prisma.user.updateMany({
+      where: { id: solver.id, tokens: { gte: 1 } },
+      data: { tokens: { decrement: 1 } },
+    });
+    if (consumed.count === 0) {
+      throw new ValidationError(
+        "You have no tokens left. Submitting a pitch costs one token. Please buy tokens to continue."
+      );
+    }
+
+    const balance = await prisma.user.findUnique({
+      where: { id: solver.id },
+      select: { tokens: true },
+    });
+
     // Pure deterministic quality gate evaluation
     const evaluation = evaluatePitch(dto.pitchInput);
 
@@ -68,6 +84,7 @@ export class PitchService {
       evaluation,
       solver: updatedSolver,
       pitch,
+      tokensRemaining: balance?.tokens ?? 0,
     };
   }
 
