@@ -3,6 +3,7 @@
 import React, { createContext, useContext, useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { SessionProvider, useSession, signIn, signOut } from "next-auth/react";
+import { OAUTH_ROLE_COOKIE, type OAuthRole } from "./oauth-role";
 
 export interface AuthUser {
   id: string;
@@ -20,7 +21,7 @@ interface AuthContextType {
   login: (email: string) => Promise<boolean>;
   signup: (data: { name: string; email: string; role: "SOLVER" | "POSTER" }) => Promise<boolean>;
   logout: () => void;
-  signInWithGoogle: () => Promise<void>;
+  signInWithGoogle: (role: OAuthRole) => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType>({
@@ -131,7 +132,8 @@ function AuthInternal({ children }: { children: React.ReactNode }) {
     }
   };
 
-  const signInWithGoogle = async () => {
+  const signInWithGoogle = async (role: OAuthRole) => {
+    document.cookie = `${OAUTH_ROLE_COOKIE}=${role}; Path=/; Max-Age=600; SameSite=Lax`;
     await signIn("google", { callbackUrl: "/problems" });
   };
 

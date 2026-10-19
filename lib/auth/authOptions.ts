@@ -1,14 +1,17 @@
 import { NextAuthOptions } from "next-auth";
 import GoogleProvider from "next-auth/providers/google";
 import { PrismaAdapter } from "@next-auth/prisma-adapter";
+import { cookies } from "next/headers";
 import { prisma } from "@/lib/db";
+import { OAUTH_ROLE_COOKIE, parseOAuthRole } from "./oauth-role";
 
 export const authOptions: NextAuthOptions = {
   adapter: PrismaAdapter(prisma),
   providers: [
     GoogleProvider({
-      clientId: process.env.GOOGLE_CLIENT_ID || "",
-      clientSecret: process.env.GOOGLE_CLIENT_SECRET || "",
+      // Server-only env values; never inline OAuth credentials here.
+      clientId: process.env.GOOGLE_CLIENT_ID ?? "",
+      clientSecret: process.env.GOOGLE_CLIENT_SECRET ?? "",
       allowDangerousEmailAccountLinking: true,
     }),
   ],
@@ -18,6 +21,16 @@ export const authOptions: NextAuthOptions = {
   callbacks: {
     async jwt({ token, user, trigger, session }) {
       if (user) {
+        if (trigger === "signUp") {
+          const selectedRole = parseOAuthRole(cookies().get(OAUTH_ROLE_COOKIE)?.value);
+          if (selectedRole) {
+            await prisma.user.update({
+              where: { id: user.id },
+              data: { role: selectedRole },
+            });
+          }
+        }
+
         token.id = user.id;
         const dbUser = await prisma.user.findUnique({
           where: { id: user.id },
