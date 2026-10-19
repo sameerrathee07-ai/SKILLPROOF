@@ -60,7 +60,7 @@ describe("POST /api/auth/signup", () => {
       role: "SOLVER",
     });
 
-    const res = await POST(req({ name: "N", email: "n@b.com" }));
+    const res = await POST(req({ name: "N", email: "n@b.com" }), undefined);
     const cookie = res.headers.get("set-cookie") ?? "";
     expect(cookie).toContain("skillproof_session=");
     expect(cookie).toContain("HttpOnly");

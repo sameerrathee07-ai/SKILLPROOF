@@ -10,11 +10,16 @@ import {
 
 const SECRET = "test-secret-0123456789abcdef";
 
-const toB64url = (bytes: Uint8Array) =>
-  btoa(String.fromCharCode(...bytes))
+const toB64url = (bytes: Uint8Array) => {
+  let binary = "";
+  for (let i = 0; i < bytes.length; i++) {
+    binary += String.fromCharCode(bytes[i]);
+  }
+  return btoa(binary)
     .replace(/\+/g, "-")
     .replace(/\//g, "_")
     .replace(/=+$/, "");
+};
 
 // Mirrors the production algorithm so tests can craft tokens with a controlled exp.
 async function signWith(secret: string, payload: object) {

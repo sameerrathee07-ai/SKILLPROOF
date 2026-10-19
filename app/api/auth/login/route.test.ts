@@ -48,7 +48,7 @@ describe("POST /api/auth/login", () => {
     const existing = { id: "u1", email: "x@y.com", name: "X", role: "SOLVER" };
     prismaMock.user.findUnique.mockResolvedValue(existing);
 
-    const res = await POST(req({ email: "x@y.com" }));
+    const res = await POST(req({ email: "x@y.com" }), undefined);
     const cookie = res.headers.get("set-cookie") ?? "";
     expect(cookie).toContain("skillproof_session=");
     expect(cookie).toContain("HttpOnly");
