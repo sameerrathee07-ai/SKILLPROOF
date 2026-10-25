@@ -25,7 +25,21 @@ export function Navbar() {
         .toUpperCase()
     : "SP";
 
-  if (pathname === "/") {
+  const ROUTES_WITH_NEW_HEADER = [
+    "/",
+    "/problems",
+    "/admin/calibrate",
+    "/about",
+    "/services",
+    "/pricing",
+    "/collaborate",
+    "/profile",
+    "/tokens",
+    "/login",
+    "/signup",
+  ];
+
+  if (ROUTES_WITH_NEW_HEADER.includes(pathname)) {
     return null;
   }
 

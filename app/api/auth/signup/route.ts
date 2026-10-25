@@ -5,7 +5,7 @@ import { SESSION_COOKIE, sessionCookieOptions, signSession } from "@/lib/auth/se
 
 export const POST = withErrorHandler(async (request: Request) => {
   const body = await request.json();
-  const { name, email, role } = body;
+  const { name, email, role, image } = body;
 
   if (!email || !name) {
     throw new AppError("Name and Email are required", 400, "MISSING_FIELDS");
@@ -31,6 +31,7 @@ export const POST = withErrorHandler(async (request: Request) => {
       role: role === "POSTER" ? "POSTER" : "SOLVER",
       tokens: 50,
       credibilityScore: 1.0,
+      ...(typeof image === "string" && image.trim() ? { image: image.trim() } : {}),
     },
   });
 

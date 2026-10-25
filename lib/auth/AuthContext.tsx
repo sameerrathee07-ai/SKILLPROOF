@@ -13,15 +13,20 @@ export interface AuthUser {
   tokens: number;
   credibilityScore: number;
   image?: string | null;
+  age?: number | null;
+  company?: string | null;
+  bio?: string | null;
+  headline?: string | null;
 }
 
 interface AuthContextType {
   user: AuthUser | null;
   loading: boolean;
-  login: (email: string) => Promise<boolean>;
-  signup: (data: { name: string; email: string; role: "SOLVER" | "POSTER" }) => Promise<boolean>;
+  login: (email: string, image?: string | null) => Promise<boolean>;
+  signup: (data: { name: string; email: string; role: "SOLVER" | "POSTER"; image?: string | null }) => Promise<boolean>;
   logout: () => void;
   signInWithGoogle: (role: OAuthRole) => Promise<void>;
+  updateUser: (data: Partial<AuthUser>) => void;
 }
 
 const AuthContext = createContext<AuthContextType>({
@@ -31,6 +36,7 @@ const AuthContext = createContext<AuthContextType>({
   signup: async () => false,
   logout: () => {},
   signInWithGoogle: async () => {},
+  updateUser: () => {},
 });
 
 const AUTH_STORAGE_KEY = "skillproof_auth_user";
@@ -71,17 +77,18 @@ function AuthInternal({ children }: { children: React.ReactNode }) {
       tokens: session.user.tokens ?? 50,
       credibilityScore: session.user.credibilityScore ?? 1.0,
       image: session.user.image,
+      ...(localUser || {}),
     };
   }
 
   const isLoading = status === "loading" ? true : localLoading;
 
-  const login = async (email: string) => {
+  const login = async (email: string, image?: string | null) => {
     try {
       const res = await fetch("/api/auth/login", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email }),
+        body: JSON.stringify({ email, ...(image ? { image } : {}) }),
       });
       const data = await res.json();
       if (!res.ok) {
@@ -98,7 +105,7 @@ function AuthInternal({ children }: { children: React.ReactNode }) {
     }
   };
 
-  const signup = async (data: { name: string; email: string; role: "SOLVER" | "POSTER" }) => {
+  const signup = async (data: { name: string; email: string; role: "SOLVER" | "POSTER"; image?: string | null }) => {
     try {
       const res = await fetch("/api/auth/signup", {
         method: "POST",
@@ -137,6 +144,26 @@ function AuthInternal({ children }: { children: React.ReactNode }) {
     await signIn("google", { callbackUrl: "/problems" });
   };
 
+  const updateUser = (data: Partial<AuthUser>) => {
+    setLocalUser((prev) => {
+      const base = activeUser || prev || ({
+        id: "local_user_" + Date.now(),
+        name: "SkillProof User",
+        email: "user@skillproof.local",
+        role: "SOLVER",
+        tokens: 50,
+        credibilityScore: 1.0,
+      } as AuthUser);
+      const updated: AuthUser = { ...base, ...data };
+      try {
+        localStorage.setItem(AUTH_STORAGE_KEY, JSON.stringify(updated));
+      } catch (e) {
+        console.error("Failed to persist user profile update", e);
+      }
+      return updated;
+    });
+  };
+
   return (
     <AuthContext.Provider
       value={{
@@ -146,6 +173,7 @@ function AuthInternal({ children }: { children: React.ReactNode }) {
         signup,
         logout,
         signInWithGoogle,
+        updateUser,
       }}
     >
       {children}

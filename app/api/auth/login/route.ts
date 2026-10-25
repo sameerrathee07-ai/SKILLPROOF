@@ -5,7 +5,7 @@ import { SESSION_COOKIE, sessionCookieOptions, signSession } from "@/lib/auth/se
 
 export const POST = withErrorHandler(async (request: Request) => {
   const body = await request.json();
-  const { email } = body;
+  const { email, image } = body;
 
   if (!email || typeof email !== "string") {
     throw new AppError("Valid email is required", 400, "INVALID_EMAIL");
@@ -19,7 +19,15 @@ export const POST = withErrorHandler(async (request: Request) => {
     throw new UnauthorizedError("No account found for this email.");
   }
 
-  const response = successResponse({ user });
+  let activeUser = user;
+  if (typeof image === "string" && image.trim()) {
+    activeUser = await prisma.user.update({
+      where: { id: user.id },
+      data: { image: image.trim() },
+    });
+  }
+
+  const response = successResponse({ user: activeUser });
   response.cookies.set(
     SESSION_COOKIE,
     await signSession({ userId: user.id, role: user.role }),

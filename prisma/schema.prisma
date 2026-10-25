@@ -16,6 +16,10 @@ model User {
   role             String    @default("SOLVER") // SOLVER, POSTER, ADMIN
   tokens           Int       @default(50)
   credibilityScore Float     @default(1.0)
+  age              Int?
+  company          String?
+  bio              String?
+  headline         String?
   createdAt        DateTime  @default(now())
   pitches          Pitch[]
   problemsPosted   Problem[] @relation("PostedProblems")
