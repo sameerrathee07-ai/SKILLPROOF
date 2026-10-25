@@ -13,3 +13,17 @@ import { webcrypto } from "node:crypto";
 if (!globalThis.crypto?.subtle) {
   Object.defineProperty(globalThis, "crypto", { value: webcrypto, configurable: true });
 }
+
+// Mock IntersectionObserver for Motion / jsdom
+if (typeof window !== "undefined" && !window.IntersectionObserver) {
+  class MockIntersectionObserver {
+    observe = vi.fn();
+    unobserve = vi.fn();
+    disconnect = vi.fn();
+  }
+  Object.defineProperty(window, "IntersectionObserver", {
+    writable: true,
+    configurable: true,
+    value: MockIntersectionObserver,
+  });
+}
