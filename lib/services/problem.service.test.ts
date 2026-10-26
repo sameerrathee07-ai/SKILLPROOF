@@ -6,7 +6,7 @@ const { prismaMock, organizationServiceMock } = vi.hoisted(() => ({
   prismaMock: {
     problem: { findMany: vi.fn(), findUnique: vi.fn(), create: vi.fn(), count: vi.fn() },
     organization: { count: vi.fn() },
-    pitch: { count: vi.fn() },
+    pitch: { count: vi.fn(), groupBy: vi.fn() },
   },
   organizationServiceMock: {
     findOrCreateOrganization: vi.fn(),
@@ -24,26 +24,27 @@ describe("ProblemService", () => {
     prismaMock.problem.count.mockReset();
     prismaMock.organization.count.mockReset();
     prismaMock.pitch.count.mockReset();
+    prismaMock.pitch.groupBy.mockReset();
     organizationServiceMock.findOrCreateOrganization.mockReset();
   });
 
   describe("listProblems", () => {
     it("lists problems with no filters and aggregates pitch counts", async () => {
       prismaMock.problem.findMany.mockResolvedValue([
-        {
-          id: "p1",
-          pitches: [
-            { passed: true },
-            { passed: false },
-          ],
-        },
+        { id: "p1", _count: { pitches: 2 } },
+      ]);
+      prismaMock.pitch.groupBy.mockResolvedValue([
+        { problemId: "p1", _count: { _all: 1 } },
       ]);
 
       const result = await ProblemService.listProblems();
 
       expect(prismaMock.problem.findMany).toHaveBeenCalledWith({
         where: {},
-        include: expect.objectContaining({ organization: true }),
+        include: expect.objectContaining({
+          organization: true,
+          _count: { select: { pitches: true } },
+        }),
         orderBy: { createdAt: "desc" },
       });
       expect(result[0].totalPitches).toBe(2);
@@ -79,8 +80,9 @@ describe("ProblemService", () => {
     it("returns problem with pitch stats", async () => {
       prismaMock.problem.findUnique.mockResolvedValue({
         id: "p1",
-        pitches: [{ passed: true }],
+        _count: { pitches: 1 },
       });
+      prismaMock.pitch.count.mockResolvedValue(1);
       const result = await ProblemService.getProblemById("p1");
       expect(result.totalPitches).toBe(1);
       expect(result.vettedPitches).toBe(1);

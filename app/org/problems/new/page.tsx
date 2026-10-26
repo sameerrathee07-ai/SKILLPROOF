@@ -92,16 +92,16 @@ export default function NewProblemPage() {
       <div className="space-y-2">
         <Link
           href="/problems"
-          className="inline-flex items-center text-xs font-semibold text-slate-500 hover:text-slate-800 transition-colors"
+          className="inline-flex items-center text-xs font-semibold text-slate-400 hover:text-white transition-colors"
         >
           <ArrowLeft className="w-3.5 h-3.5 mr-1" />
           Back to all challenges
         </Link>
 
-        <h1 className="text-3xl font-extrabold tracking-tight text-slate-900">
+        <h1 className="text-3xl font-extrabold tracking-tight text-white">
           Post an Education Challenge
         </h1>
-        <p className="text-sm text-slate-600">
+        <p className="text-sm text-slate-400">
           Describe your operational friction. All student proposals must pass the deterministic 6.0 quality gate before arriving in your vetted inbox.
         </p>
       </div>

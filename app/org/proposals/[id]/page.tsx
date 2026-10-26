@@ -51,7 +51,7 @@ export default function StandardizedProposalPage() {
     return (
       <div className="py-24 text-center">
         <div className="inline-block w-8 h-8 border-4 border-brand-600 border-t-transparent rounded-full animate-spin mb-4" />
-        <p className="text-sm text-slate-500 font-medium">Loading standardized proposal document...</p>
+        <p className="text-sm text-slate-300 font-medium">Loading standardized proposal document...</p>
       </div>
     );
   }
@@ -59,8 +59,8 @@ export default function StandardizedProposalPage() {
   if (!proposal) {
     return (
       <div className="py-24 text-center max-w-md mx-auto space-y-4">
-        <h2 className="text-xl font-bold text-slate-900">Proposal not found</h2>
-        <Link href="/problems" className="text-sm font-semibold text-brand-600">
+        <h2 className="text-xl font-bold text-white">Proposal not found</h2>
+        <Link href="/problems" className="text-sm font-semibold text-sky-400">
           Back to all challenges
         </Link>
       </div>
@@ -80,10 +80,10 @@ export default function StandardizedProposalPage() {
   return (
     <div className="space-y-6 pb-20">
       {/* Action Header (Hidden during Print) */}
-      <div className="no-print flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-slate-200">
+      <div className="no-print flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-white/10">
         <Link
           href={`/org/problems/${proposal.problemId}/proposals`}
-          className="inline-flex items-center text-xs font-semibold text-slate-500 hover:text-slate-800 transition-colors"
+          className="inline-flex items-center text-xs font-semibold text-slate-400 hover:text-white transition-colors"
         >
           <ArrowLeft className="w-3.5 h-3.5 mr-1" />
           Back to Problem Vetted Inbox

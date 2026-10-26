@@ -40,14 +40,16 @@ const DEFAULT_STATE: PitchFormState = {
   revisionCount: 0,
 };
 
-export function usePitchForm(problemId: string, initialRevision = 0) {
+export function usePitchForm(problemId: string, initialRevision = 0, initialStep = 1) {
   const draftKey = `skillproof_pitch_draft_${problemId}`;
 
   const [form, setForm] = useState<PitchFormState>(() => {
     return { ...DEFAULT_STATE, revisionCount: initialRevision };
   });
 
-  const [currentStep, setCurrentStep] = useState(1);
+  const [currentStep, setCurrentStep] = useState(() =>
+    Math.min(5, Math.max(1, initialStep))
+  );
   const [stepErrors, setStepErrors] = useState<Record<string, string>>({});
   const [isLoaded, setIsLoaded] = useState(false);
 

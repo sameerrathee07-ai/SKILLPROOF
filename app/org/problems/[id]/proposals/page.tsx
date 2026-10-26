@@ -14,7 +14,7 @@ import {
 } from "lucide-react";
 import { ProposalCard } from "@/components/ProposalCard";
 import { PitchService } from "@/lib/services/pitch.service";
-import { getSessionUser } from "@/lib/auth/session";
+import { getRequestUser } from "@/lib/auth/request-user";
 
 export const dynamic = "force-dynamic";
 
@@ -25,12 +25,12 @@ export default async function VettedInboxPage({
 }) {
   let inboxData;
   try {
-    const user = await getSessionUser();
+    const user = await getRequestUser();
     inboxData = await PitchService.getVettedInbox(params.id, user ? { id: user.id, role: user.role } : undefined);
   } catch {
     return (
       <div className="py-24 text-center max-w-md mx-auto space-y-4">
-        <h2 className="text-xl font-bold text-slate-900">Problem not found</h2>
+        <h2 className="text-xl font-bold text-white">Problem not found</h2>
         <Link href="/problems" className="text-sm font-semibold text-brand-600">
           Back to all challenges
         </Link>
@@ -46,7 +46,7 @@ export default async function VettedInboxPage({
       <div className="space-y-3">
         <Link
           href="/problems"
-          className="inline-flex items-center text-xs font-semibold text-slate-500 hover:text-slate-800 transition-colors"
+          className="inline-flex items-center text-xs font-semibold text-slate-400 hover:text-white transition-colors"
         >
           <ArrowLeft className="w-3.5 h-3.5 mr-1" />
           Back to all challenges
@@ -99,11 +99,11 @@ export default async function VettedInboxPage({
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
             <ShieldCheck className="w-5 h-5 text-emerald-600" />
-            <h2 className="text-lg font-bold text-slate-900">
+            <h2 className="text-lg font-bold text-white">
               Vetted Proposal Inbox
             </h2>
           </div>
-          <span className="text-xs font-semibold text-slate-500">
+          <span className="text-xs font-semibold text-slate-400">
             Strict Filter: passed === true
           </span>
         </div>
@@ -117,14 +117,6 @@ export default async function VettedInboxPage({
             <p className="text-xs text-slate-500 max-w-sm mx-auto">
               SkillProof shields your inbox from half-baked submissions. Only pitches passing Tier 1 knockouts and scoring ≥ 6.0 appear here.
             </p>
-            <div className="pt-2">
-              <Link
-                href={`/problems/${problem.id}/pitch`}
-                className="inline-block px-4 py-2 bg-brand-600 text-white rounded-lg text-xs font-bold"
-              >
-                Submit a Qualifying Pitch as Solver
-              </Link>
-            </div>
           </div>
         ) : (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">

@@ -124,9 +124,9 @@ export default async function ProblemsPage({
               </div>
             ) : (
               problems.map((problem) => {
-                const passedPitches = problem.pitches.filter((p) => p.passed);
-                const totalPitches = problem.pitches.length;
-                const blockedNoise = totalPitches - passedPitches.length;
+                const vettedPitches = problem.vettedPitches;
+                const totalPitches = problem.totalPitches;
+                const blockedNoise = totalPitches - vettedPitches;
 
                 return (
                   <div
@@ -156,7 +156,7 @@ export default async function ProblemsPage({
                       <div className="flex flex-wrap items-center gap-4 pt-2 text-xs">
                         <div className="flex items-center gap-1.5 text-emerald-400 font-semibold bg-emerald-500/10 px-3 py-1 rounded-md border border-emerald-500/20">
                           <CheckCircle2 className="w-3.5 h-3.5" />
-                          <span>{passedPitches.length} Vetted Proposals</span>
+                          <span>{vettedPitches} Vetted Proposals</span>
                         </div>
 
                         <div className="text-slate-400 font-medium">

@@ -9,10 +9,10 @@ export const metadata = {
 export default function PrivacyPolicyPage() {
   return (
     <div className="max-w-4xl mx-auto space-y-8 pb-16">
-      <div className="border-b border-slate-200 pb-6">
+      <div className="border-b border-white/10 pb-6">
         <Link
           href="/"
-          className="inline-flex items-center gap-1.5 text-xs font-semibold text-slate-500 hover:text-slate-900 transition-colors mb-4"
+          className="inline-flex items-center gap-1.5 text-xs font-semibold text-slate-400 hover:text-white transition-colors mb-4"
         >
           <ArrowLeft className="w-4 h-4" />
           <span>Back to Home</span>
@@ -22,10 +22,10 @@ export default function PrivacyPolicyPage() {
             <Lock className="w-5 h-5 text-sky-400" />
           </div>
           <div>
-            <h1 className="text-3xl font-extrabold tracking-tight text-slate-900">
+            <h1 className="text-3xl font-extrabold tracking-tight text-white">
               Privacy Policy
             </h1>
-            <p className="text-xs text-slate-500 mt-1">
+            <p className="text-xs text-slate-400 mt-1">
               Effective Date: October 2026 | Version 1.0
             </p>
           </div>

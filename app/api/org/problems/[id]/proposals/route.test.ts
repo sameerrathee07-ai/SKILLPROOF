@@ -2,17 +2,17 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 import { GET } from "./route";
 import { NotFoundError } from "@/lib/api/errors";
 
-const { getVettedInboxMock, getSessionUserMock } = vi.hoisted(() => ({
+const { getVettedInboxMock, getRequestUserMock } = vi.hoisted(() => ({
   getVettedInboxMock: vi.fn(),
-  getSessionUserMock: vi.fn(),
+  getRequestUserMock: vi.fn(),
 }));
 
 vi.mock("@/lib/services/pitch.service", () => ({
   PitchService: { getVettedInbox: getVettedInboxMock },
 }));
 
-vi.mock("@/lib/auth/session", () => ({
-  getSessionUser: getSessionUserMock,
+vi.mock("@/lib/auth/request-user", () => ({
+  getRequestUser: getRequestUserMock,
 }));
 
 const makeRequest = (problemId = "prob-1") =>
@@ -26,7 +26,7 @@ describe("GET /api/org/problems/[id]/proposals API Route", () => {
   });
 
   it("returns 401 without a session", async () => {
-    getSessionUserMock.mockResolvedValue(null);
+    getRequestUserMock.mockResolvedValue(null);
 
     const res = await GET(makeRequest(), makeContext());
 
@@ -35,7 +35,7 @@ describe("GET /api/org/problems/[id]/proposals API Route", () => {
   });
 
   it("passes the session user to the service and returns the inbox", async () => {
-    getSessionUserMock.mockResolvedValue({ id: "poster-1", role: "POSTER" });
+    getRequestUserMock.mockResolvedValue({ id: "poster-1", role: "POSTER" });
     getVettedInboxMock.mockResolvedValue({ vettedCount: 0 });
 
     const res = await GET(makeRequest(), makeContext());
@@ -46,7 +46,7 @@ describe("GET /api/org/problems/[id]/proposals API Route", () => {
   });
 
   it("returns 404 when the service hides the problem", async () => {
-    getSessionUserMock.mockResolvedValue({ id: "poster-2", role: "POSTER" });
+    getRequestUserMock.mockResolvedValue({ id: "poster-2", role: "POSTER" });
     getVettedInboxMock.mockRejectedValue(new NotFoundError(`Problem with id "prob-1" not found.`));
 
     const res = await GET(makeRequest(), makeContext());

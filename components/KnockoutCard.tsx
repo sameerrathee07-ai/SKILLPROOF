@@ -130,7 +130,7 @@ export function KnockoutCard({
           </button>
         ) : problemId ? (
           <Link
-            href={`/problems/${problemId}/pitch?step=${reviseStep}`}
+            href={`/problems/${problemId}/pitch?revision=true&step=${reviseStep}`}
             className="rounded-lg border-2 border-black bg-amber-400 px-4 py-2 text-xs font-black text-black shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] hover:translate-x-0.5 hover:translate-y-0.5 hover:shadow-none transition-all inline-block"
           >
             Fix Step {reviseStep} &rarr;

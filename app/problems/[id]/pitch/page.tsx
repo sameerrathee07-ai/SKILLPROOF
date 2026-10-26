@@ -22,6 +22,11 @@ export default function PitchWizardPage() {
   const router = useRouter();
   const problemId = params?.id as string;
   const isRevision = searchParams?.get("revision") === "true";
+  const requestedStep = Number(searchParams?.get("step"));
+  const initialStep =
+    Number.isInteger(requestedStep) && requestedStep >= 1 && requestedStep <= 5
+      ? requestedStep
+      : 1;
 
   const [problem, setProblem] = useState<any>(null);
   const [loadingProblem, setLoadingProblem] = useState(true);
@@ -42,7 +47,7 @@ export default function PitchWizardPage() {
     nextStep,
     prevStep,
     goToStep,
-  } = usePitchForm(problemId, isRevision ? 1 : 0);
+  } = usePitchForm(problemId, isRevision ? 1 : 0, initialStep);
 
   // Fetch problem details
   useEffect(() => {
@@ -124,7 +129,7 @@ export default function PitchWizardPage() {
     return (
       <div className="py-24 text-center">
         <div className="inline-block w-8 h-8 border-4 border-brand-600 border-t-transparent rounded-full animate-spin mb-4" />
-        <p className="text-sm text-slate-500 font-medium">Loading challenge details...</p>
+        <p className="text-sm text-slate-300 font-medium">Loading challenge details...</p>
       </div>
     );
   }
@@ -143,7 +148,7 @@ export default function PitchWizardPage() {
       <div className="space-y-3">
         <Link
           href="/problems"
-          className="inline-flex items-center text-xs font-semibold text-slate-500 hover:text-slate-800 transition-colors"
+          className="inline-flex items-center text-xs font-semibold text-slate-400 hover:text-white transition-colors"
         >
           <ArrowLeft className="w-3.5 h-3.5 mr-1" />
           Back to all challenges

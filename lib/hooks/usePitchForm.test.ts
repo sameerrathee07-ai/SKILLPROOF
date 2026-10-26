@@ -24,6 +24,14 @@ describe("usePitchForm", () => {
     expect(result.current.form.revisionCount).toBe(0);
   });
 
+  it("opens on the requested step for revision links", async () => {
+    const { result } = renderHook(() => usePitchForm(PROBLEM_ID, 1, 3));
+    await waitFor(() => expect(result.current.isLoaded).toBe(true));
+
+    expect(result.current.currentStep).toBe(3);
+    expect(result.current.form.revisionCount).toBe(1);
+  });
+
   it("computes a knockout status from the live pitch input", async () => {
     const { result } = renderHook(() => usePitchForm(PROBLEM_ID));
     await waitFor(() => expect(result.current.isLoaded).toBe(true));

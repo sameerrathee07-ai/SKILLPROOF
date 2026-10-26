@@ -35,23 +35,32 @@ export class ProblemService {
       where,
       include: {
         organization: true,
-        pitches: {
-          select: {
-            id: true,
-            passed: true,
-            score: true,
-            createdAt: true,
-          },
-        },
+        _count: { select: { pitches: true } },
       },
       orderBy: { createdAt: "desc" },
     });
 
-    return problems.map((p) => ({
-      ...p,
-      totalPitches: p.pitches.length,
-      vettedPitches: p.pitches.filter((pitch) => pitch.passed).length,
-    }));
+    const problemIds = problems.map((problem) => problem.id);
+    const vettedByProblem = new Map<string, number>();
+    if (problemIds.length > 0) {
+      const vettedCounts = await prisma.pitch.groupBy({
+        by: ["problemId"],
+        where: { problemId: { in: problemIds }, passed: true },
+        _count: { _all: true },
+      });
+      for (const row of vettedCounts) {
+        vettedByProblem.set(row.problemId, row._count._all);
+      }
+    }
+
+    return problems.map((problem) => {
+      const { _count, ...rest } = problem;
+      return {
+        ...rest,
+        totalPitches: _count.pitches,
+        vettedPitches: vettedByProblem.get(problem.id) ?? 0,
+      };
+    });
   }
 
   /**
@@ -62,14 +71,7 @@ export class ProblemService {
       where: { id },
       include: {
         organization: true,
-        pitches: {
-          select: {
-            id: true,
-            passed: true,
-            score: true,
-            createdAt: true,
-          },
-        },
+        _count: { select: { pitches: true } },
       },
     });
 
@@ -77,10 +79,15 @@ export class ProblemService {
       throw new NotFoundError(`Problem with id "${id}" not found.`);
     }
 
+    const vettedPitches = await prisma.pitch.count({
+      where: { problemId: id, passed: true },
+    });
+
+    const { _count, ...rest } = problem;
     return {
-      ...problem,
-      totalPitches: problem.pitches.length,
-      vettedPitches: problem.pitches.filter((p) => p.passed).length,
+      ...rest,
+      totalPitches: _count.pitches,
+      vettedPitches,
     };
   }
 

@@ -5,7 +5,7 @@ import Link from "next/link";
 import { Sheet, SheetContent, SheetTrigger, SheetTitle, SheetClose } from "@/components/ui/sheet";
 import { NavigationMenu, NavigationMenuItem, NavigationMenuLink, NavigationMenuList } from "@/components/ui/navigation-menu";
 import { cn } from "@/lib/utils";
-import { Menu, X, ArrowUpRight, Instagram, Twitter, Linkedin, Dribbble, User as UserIcon, LogIn, LogOut } from "lucide-react";
+import { Menu, X, ArrowUpRight, User as UserIcon, LogIn, LogOut } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { motion } from "motion/react";
 import { useAuth } from "@/lib/auth/AuthContext";
@@ -91,7 +91,9 @@ const Header = ({ navigationData, className }: HeaderProps) => {
   const [sticky, setSticky] = useState(false);
   const [isOpen, setIsOpen] = useState(false);
 
-  const links = navigationData && navigationData.length > 0 ? navigationData : defaultHeaderNav;
+  const links = (navigationData && navigationData.length > 0 ? navigationData : defaultHeaderNav).filter(
+    (item) => item.href !== "/admin/calibrate" || user?.role === "ADMIN"
+  );
 
   const handleScroll = useCallback(() => {
     setSticky(window.scrollY >= 50);
@@ -317,37 +319,6 @@ const Header = ({ navigationData, className }: HeaderProps) => {
                   </div>
 
                   <div className="mt-auto flex flex-col gap-4 pt-6 border-t border-border">
-                    <div className="flex gap-3">
-                      <a
-                        href="#"
-                        aria-label="Dribbble"
-                        className="flex items-center justify-center rounded-lg border border-border hover:bg-muted transition p-2.5"
-                      >
-                        <Dribbble className="w-4 h-4" />
-                      </a>
-                      <a
-                        href="#"
-                        aria-label="Instagram"
-                        className="flex items-center justify-center rounded-lg border border-border hover:bg-muted transition p-2.5"
-                      >
-                        <Instagram className="w-4 h-4" />
-                      </a>
-                      <a
-                        href="#"
-                        aria-label="Twitter"
-                        className="flex items-center justify-center rounded-lg border border-border hover:bg-muted transition p-2.5"
-                      >
-                        <Twitter className="w-4 h-4" />
-                      </a>
-                      <a
-                        href="#"
-                        aria-label="LinkedIn"
-                        className="flex items-center justify-center rounded-lg border border-border hover:bg-muted transition p-2.5"
-                      >
-                        <Linkedin className="w-4 h-4" />
-                      </a>
-                    </div>
-
                     <p className="text-xs text-muted-foreground">
                       SkillProof Verified Quality Platform
                     </p>

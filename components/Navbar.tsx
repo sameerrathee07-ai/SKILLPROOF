@@ -37,9 +37,16 @@ export function Navbar() {
     "/tokens",
     "/login",
     "/signup",
+    "/privacy",
+    "/terms",
+    "/org",
   ];
 
-  if (ROUTES_WITH_NEW_HEADER.includes(pathname)) {
+  const hasNewHeader = ROUTES_WITH_NEW_HEADER.some(
+    (route) => pathname === route || pathname.startsWith(`${route}/`)
+  );
+
+  if (hasNewHeader) {
     return null;
   }
 
