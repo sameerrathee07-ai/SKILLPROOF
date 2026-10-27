@@ -1,6 +1,7 @@
 import { prisma } from "@/lib/db";
 import { withErrorHandler, successResponse } from "@/lib/api/response";
-import { UnauthorizedError } from "@/lib/api/errors";
+import { UnauthorizedError, ValidationError } from "@/lib/api/errors";
+import { readJsonBody } from "@/lib/api/request-body";
 import { getRequestUser } from "@/lib/auth/request-user";
 
 export const GET = withErrorHandler(async () => {
@@ -17,11 +18,12 @@ export const GET = withErrorHandler(async () => {
 });
 
 export const PATCH = withErrorHandler(async (request: Request) => {
-  const body = await request.json();
   const reqUser = await getRequestUser();
   if (!reqUser) {
     throw new UnauthorizedError();
   }
+
+  const body = await readJsonBody(request);
 
   const updateData: {
     name?: string;
@@ -35,7 +37,15 @@ export const PATCH = withErrorHandler(async (request: Request) => {
   if (body.name !== undefined) updateData.name = String(body.name).trim();
   if (body.image !== undefined) updateData.image = body.image ? String(body.image).trim() : null;
   if (body.age !== undefined) {
-    updateData.age = body.age === "" || body.age === null ? null : Number(body.age);
+    if (body.age === "" || body.age === null) {
+      updateData.age = null;
+    } else {
+      const age = Number(body.age);
+      if (!Number.isFinite(age) || age < 0 || age > 120) {
+        throw new ValidationError("Age must be a number between 0 and 120.");
+      }
+      updateData.age = Math.trunc(age);
+    }
   }
   if (body.company !== undefined) updateData.company = body.company ? String(body.company).trim() : null;
   if (body.bio !== undefined) updateData.bio = body.bio ? String(body.bio).trim() : null;

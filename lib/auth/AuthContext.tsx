@@ -70,6 +70,9 @@ function AuthInternal({ children }: { children: React.ReactNode }) {
   let activeUser: AuthUser | null = localUser;
   if (status === "authenticated" && session?.user) {
     activeUser = {
+      // Local storage only holds profile extras (bio, age, company); the
+      // server session must win for identity and authorization fields.
+      ...(localUser || {}),
       id: session.user.id,
       name: session.user.name || "Authenticated User",
       email: session.user.email || "",
@@ -77,7 +80,6 @@ function AuthInternal({ children }: { children: React.ReactNode }) {
       tokens: session.user.tokens ?? 50,
       credibilityScore: session.user.credibilityScore ?? 1.0,
       image: session.user.image,
-      ...(localUser || {}),
     };
   }
 

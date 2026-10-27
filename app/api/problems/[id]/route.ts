@@ -1,6 +1,7 @@
 import { ProblemService } from "@/lib/services/problem.service";
 import { withErrorHandler, successResponse } from "@/lib/api/response";
 import { UnauthorizedError, ValidationError } from "@/lib/api/errors";
+import { readJsonBody } from "@/lib/api/request-body";
 import { getRequestUser } from "@/lib/auth/request-user";
 
 export const GET = withErrorHandler(
@@ -17,7 +18,7 @@ export const PATCH = withErrorHandler(
       throw new UnauthorizedError();
     }
 
-    const body = await request.json();
+    const body = await readJsonBody(request);
     if (typeof body?.status !== "string") {
       throw new ValidationError("Problem status is required.");
     }

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import Header from "@/components/ui/hero-01-utils/header";
@@ -16,11 +16,22 @@ export default function LoginPage() {
   const [submitting, setSubmitting] = useState(false);
   const [googleLoading, setGoogleLoading] = useState(false);
   const [googleRole, setGoogleRole] = useState<"SOLVER" | "POSTER">("SOLVER");
+  const [authError, setAuthError] = useState<string | null>(null);
   const { login, signInWithGoogle } = useAuth();
   const router = useRouter();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const submitRef = useRef(false);
   const googleRef = useRef(false);
+
+  useEffect(() => {
+    const error = new URLSearchParams(window.location.search).get("error");
+    if (!error) return;
+    setAuthError(
+      error === "OAuthAccountNotLinked"
+        ? "An account with this email already exists. Sign in with email instead."
+        : "Google sign-in failed. Please try again."
+    );
+  }, []);
 
   const nextPath = () => safeNextPath(window.location.search);
 
@@ -108,6 +119,14 @@ export default function LoginPage() {
 
             {/* Google OAuth Section */}
             <div className="space-y-3">
+              {authError ? (
+                <p
+                  role="alert"
+                  className="rounded-lg border border-amber-500/30 bg-amber-500/10 px-3 py-2 text-xs text-amber-200"
+                >
+                  {authError}
+                </p>
+              ) : null}
               <div>
                 <label className="block text-xs font-semibold text-slate-300 uppercase tracking-wider mb-1.5">
                   New Google Account Role

@@ -7,6 +7,7 @@ import {
   UnauthorizedError,
   ValidationError,
 } from "@/lib/api/errors";
+import { readJsonBody } from "@/lib/api/request-body";
 import { getRequestUser } from "@/lib/auth/request-user";
 
 export const GET = withErrorHandler(async (request: Request) => {
@@ -31,7 +32,7 @@ export const POST = withErrorHandler(async (request: Request) => {
     throw new ForbiddenError("Poster access required.");
   }
 
-  const body = await request.json();
+  const body = await readJsonBody(request);
   let organizationId =
     typeof body.organizationId === "string" ? body.organizationId : undefined;
 

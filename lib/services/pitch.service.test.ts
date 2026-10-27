@@ -1,6 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { PitchService } from "@/lib/services/pitch.service";
 import { ValidationError, NotFoundError } from "@/lib/api/errors";
+import * as emailService from "@/lib/email/service";
 
 const { prismaMock, userServiceMock, evaluatePitchMock } = vi.hoisted(() => ({
   prismaMock: {
@@ -74,6 +75,9 @@ describe("PitchService", () => {
     userServiceMock.getSolver.mockReset();
     userServiceMock.rewardSolverCredibility.mockReset();
     evaluatePitchMock.mockReset();
+    vi.mocked(emailService.sendProposalStatusUpdate).mockReset();
+    vi.mocked(emailService.sendGateEvaluationResult).mockReset();
+    vi.mocked(emailService.sendNewVettedProposalAlert).mockReset();
   });
 
   describe("submitAndEvaluate", () => {
@@ -493,6 +497,7 @@ describe("PitchService", () => {
     it("lets the organization owner update status and notes", async () => {
       prismaMock.pitch.findUnique.mockResolvedValue({
         id: "pitch-1",
+        status: "SUBMITTED",
         solver: { id: "solver-1", email: "solver@example.com" },
         problem: {
           postedById: "poster-1",
@@ -523,6 +528,166 @@ describe("PitchService", () => {
           problem: { include: { organization: true } },
         },
       });
+    });
+  });
+
+  describe("proposal review lifecycle", () => {
+    const poster = { id: "poster-1", role: "POSTER" };
+
+    const storedProposal = (status: string) => ({
+      id: "pitch-1",
+      status,
+      stepData: "{}",
+      scoreBreakdown: "{}",
+      solver: { id: "solver-1", email: "solver@example.com", name: "Solver" },
+      problem: { postedById: "poster-1", organization: { ownerId: "owner-1" } },
+    });
+
+    const updateResult = (status: string) => ({
+      id: "pitch-1",
+      status,
+      posterNotes: null,
+      solver: { id: "solver-1", email: "solver@example.com", name: "Solver" },
+      problem: { title: "Challenge", organization: { ownerId: "owner-1" } },
+    });
+
+    it("hides the solver email while the proposal is SUBMITTED", async () => {
+      prismaMock.pitch.findUnique.mockResolvedValue(storedProposal("SUBMITTED"));
+
+      const result = await PitchService.getProposalForReview("pitch-1", poster);
+
+      expect(result.solver.email).toBeNull();
+    });
+
+    it("reveals the solver email once SHORTLISTED", async () => {
+      prismaMock.pitch.findUnique.mockResolvedValue(storedProposal("SHORTLISTED"));
+
+      const result = await PitchService.getProposalForReview("pitch-1", poster);
+
+      expect(result.solver.email).toBe("solver@example.com");
+    });
+
+    it("reveals the solver email once ACCEPTED", async () => {
+      prismaMock.pitch.findUnique.mockResolvedValue(storedProposal("ACCEPTED"));
+
+      const result = await PitchService.getProposalForReview("pitch-1", poster);
+
+      expect(result.solver.email).toBe("solver@example.com");
+    });
+
+    it("hides the proposal from a requester who does not own it", async () => {
+      prismaMock.pitch.findUnique.mockResolvedValue(storedProposal("SUBMITTED"));
+
+      await expect(
+        PitchService.getProposalForReview("pitch-1", { id: "poster-2", role: "POSTER" })
+      ).rejects.toBeInstanceOf(NotFoundError);
+    });
+
+    it("rejects moving a declined proposal to accepted", async () => {
+      prismaMock.pitch.findUnique.mockResolvedValue(storedProposal("DECLINED"));
+
+      await expect(
+        PitchService.updateProposalStatus("pitch-1", poster, "ACCEPTED")
+      ).rejects.toBeInstanceOf(ValidationError);
+
+      expect(prismaMock.pitch.update).not.toHaveBeenCalled();
+    });
+
+    it("rejects moving an accepted proposal to declined", async () => {
+      prismaMock.pitch.findUnique.mockResolvedValue(storedProposal("ACCEPTED"));
+
+      await expect(
+        PitchService.updateProposalStatus("pitch-1", poster, "DECLINED")
+      ).rejects.toBeInstanceOf(ValidationError);
+
+      expect(prismaMock.pitch.update).not.toHaveBeenCalled();
+    });
+
+    it("allows SUBMITTED -> SHORTLISTED, emails the solver, and exposes contact", async () => {
+      prismaMock.pitch.findUnique.mockResolvedValue(storedProposal("SUBMITTED"));
+      prismaMock.pitch.update.mockResolvedValue(updateResult("SHORTLISTED"));
+
+      const result = await PitchService.updateProposalStatus(
+        "pitch-1",
+        poster,
+        "SHORTLISTED",
+        "Looks promising."
+      );
+
+      expect(result.solver.email).toBe("solver@example.com");
+      expect(emailService.sendProposalStatusUpdate).toHaveBeenCalledWith({
+        to: "solver@example.com",
+        solverName: "Solver",
+        problemTitle: "Challenge",
+        status: "SHORTLISTED",
+        posterNotes: "Looks promising.",
+      });
+    });
+
+    it("allows SUBMITTED -> DECLINED but keeps the email hidden in the response", async () => {
+      prismaMock.pitch.findUnique.mockResolvedValue(storedProposal("SUBMITTED"));
+      prismaMock.pitch.update.mockResolvedValue(updateResult("DECLINED"));
+
+      const result = await PitchService.updateProposalStatus(
+        "pitch-1",
+        poster,
+        "DECLINED",
+        "Not a fit."
+      );
+
+      expect(result.solver.email).toBeNull();
+      expect(emailService.sendProposalStatusUpdate).toHaveBeenCalledWith(
+        expect.objectContaining({ status: "DECLINED" })
+      );
+    });
+
+    it("allows SHORTLISTED -> ACCEPTED", async () => {
+      prismaMock.pitch.findUnique.mockResolvedValue(storedProposal("SHORTLISTED"));
+      prismaMock.pitch.update.mockResolvedValue(updateResult("ACCEPTED"));
+
+      const result = await PitchService.updateProposalStatus(
+        "pitch-1",
+        poster,
+        "ACCEPTED"
+      );
+
+      expect(result.status).toBe("ACCEPTED");
+      expect(emailService.sendProposalStatusUpdate).toHaveBeenCalledTimes(1);
+    });
+
+    it("treats a same-status update as a notes edit with no email", async () => {
+      prismaMock.pitch.findUnique.mockResolvedValue(storedProposal("SHORTLISTED"));
+      prismaMock.pitch.update.mockResolvedValue(updateResult("SHORTLISTED"));
+
+      await PitchService.updateProposalStatus(
+        "pitch-1",
+        poster,
+        "SHORTLISTED",
+        "Updated notes."
+      );
+
+      expect(emailService.sendProposalStatusUpdate).not.toHaveBeenCalled();
+    });
+
+    it("strips solver emails from the vetted inbox payload", async () => {
+      prismaMock.problem.findUnique.mockResolvedValue({
+        id: "p1",
+        postedById: "poster-1",
+        organization: { ownerId: "owner-1" },
+      });
+      prismaMock.pitch.findMany.mockResolvedValue([
+        {
+          id: "pitch-1",
+          stepData: "{}",
+          scoreBreakdown: "{}",
+          solver: { id: "solver-1", email: "solver@example.com" },
+        },
+      ]);
+      prismaMock.pitch.count.mockResolvedValue(1);
+
+      const result = await PitchService.getVettedInbox("p1", poster);
+
+      expect(result.proposals[0].solver.email).toBeNull();
     });
   });
 });

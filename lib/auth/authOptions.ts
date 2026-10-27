@@ -13,14 +13,16 @@ export const authOptions: NextAuthOptions = {
       // Server-only env values; never inline OAuth credentials here.
       clientId: process.env.GOOGLE_CLIENT_ID ?? "",
       clientSecret: process.env.GOOGLE_CLIENT_SECRET ?? "",
-      allowDangerousEmailAccountLinking: true,
+      // Local email signup never verifies the address; auto-linking would let
+      // an attacker pre-register a victim's email and absorb their Google login.
+      allowDangerousEmailAccountLinking: false,
     }),
   ],
   session: {
     strategy: "jwt",
   },
   callbacks: {
-    async jwt({ token, user, trigger, session }) {
+    async jwt({ token, user, trigger }) {
       if (user) {
         if (trigger === "signUp") {
           const selectedRole = parseOAuthRole(cookies().get(OAUTH_ROLE_COOKIE)?.value);
@@ -41,14 +43,6 @@ export const authOptions: NextAuthOptions = {
           token.role = (dbUser.role as "SOLVER" | "POSTER" | "ADMIN") || "SOLVER";
           token.tokens = dbUser.tokens ?? 50;
           token.credibilityScore = dbUser.credibilityScore ?? 1.0;
-        }
-      }
-
-      if (trigger === "update" && session) {
-        if (session.role) token.role = session.role;
-        if (typeof session.tokens === "number") token.tokens = session.tokens;
-        if (typeof session.credibilityScore === "number") {
-          token.credibilityScore = session.credibilityScore;
         }
       }
 

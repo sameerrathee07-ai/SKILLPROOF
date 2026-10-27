@@ -36,6 +36,14 @@ function runJwt(trigger: "signUp" | "signIn") {
   } as never);
 }
 
+function runUpdateJwt(sessionPayload: Record<string, unknown>) {
+  return jwt({
+    token: { name: "Test", role: "SOLVER", tokens: 1, credibilityScore: 1 },
+    trigger: "update",
+    session: sessionPayload,
+  } as never);
+}
+
 describe("authOptions jwt", () => {
   beforeEach(() => {
     cookieValue.current = undefined;
@@ -79,5 +87,48 @@ describe("authOptions jwt", () => {
     const token = await runJwt("signUp");
     expect(prismaMock.user.update).not.toHaveBeenCalled();
     expect(token.role).toBe("SOLVER");
+  });
+
+  it("ignores client-supplied role and token counts on session update", async () => {
+    const token = await runUpdateJwt({
+      role: "ADMIN",
+      tokens: 999,
+      credibilityScore: 9,
+    });
+
+    expect(token.role).toBe("SOLVER");
+    expect(token.tokens).toBe(1);
+    expect(token.credibilityScore).toBe(1);
+    expect(prismaMock.user.update).not.toHaveBeenCalled();
+  });
+
+  it("copies token fields into the session", async () => {
+    const session = authOptions.callbacks!.session!;
+    const result = await session({
+      session: { user: { name: "Test", email: "test@example.com" } },
+      token: { id: "u1", role: "POSTER", tokens: 7, credibilityScore: 3.5 },
+    } as never);
+
+    expect(result.user).toMatchObject({
+      id: "u1",
+      role: "POSTER",
+      tokens: 7,
+      credibilityScore: 3.5,
+    });
+  });
+
+  it("defaults missing token fields to solver limits", async () => {
+    const session = authOptions.callbacks!.session!;
+    const result = await session({
+      session: { user: { name: "Test", email: "test@example.com" } },
+      token: { id: "u1" },
+    } as never);
+
+    expect(result.user).toMatchObject({
+      id: "u1",
+      role: "SOLVER",
+      tokens: 50,
+      credibilityScore: 1.0,
+    });
   });
 });
