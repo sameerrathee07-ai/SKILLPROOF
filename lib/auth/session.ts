@@ -3,9 +3,8 @@ export const SESSION_MAX_AGE_SECONDS = 60 * 60 * 24 * 7; // 7 days
 
 export type SessionPayload = { userId: string; role: string; exp: number };
 
-// No static imports of Prisma or next/headers: this module is bundled into the
-// edge runtime by middleware.ts. getSessionUser lazy-loads the Node-only pieces
-// so they never reach the edge bundle at module scope.
+// No Prisma or next/headers imports: this module is bundled into the edge
+// runtime by middleware.ts. The DB-backed lookup lives in session-user.ts.
 const encoder = new TextEncoder();
 
 function base64UrlEncode(bytes: Uint8Array): string {
@@ -98,19 +97,4 @@ export function sessionCookieOptions(): {
     secure: process.env.NODE_ENV === "production",
     maxAge: SESSION_MAX_AGE_SECONDS,
   };
-}
-
-/**
- * Node runtime only (route handlers, server components). Middleware cannot use
- * this: it runs in the edge runtime where Prisma/SQLite do not exist.
- */
-export async function getSessionUser(): Promise<{ id: string; role: string } | null> {
-  const { cookies } = await import("next/headers");
-  const payload = await verifySession(cookies().get(SESSION_COOKIE)?.value);
-  if (!payload) return null;
-  const { prisma } = await import("@/lib/db");
-  return prisma.user.findUnique({
-    where: { id: payload.userId },
-    select: { id: true, role: true },
-  });
 }

@@ -19,7 +19,7 @@ export const POST = withErrorHandler(
     await enforceRateLimit({
       key: `pitch:${user.id}:${getClientIp(request)}`,
       limit: 5,
-      windowMs: 10 * 60 * 1000,
+      windowMs: 5 * 60 * 1000,
     });
 
     const body = await request.json();

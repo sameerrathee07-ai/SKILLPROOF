@@ -8,7 +8,7 @@ export const POST = withErrorHandler(async (request: Request) => {
   await enforceRateLimit({
     key: `auth:signup:${getClientIp(request)}`,
     limit: 10,
-    windowMs: 15 * 60 * 1000,
+    windowMs: 5 * 60 * 1000,
   });
 
   const body = await request.json();

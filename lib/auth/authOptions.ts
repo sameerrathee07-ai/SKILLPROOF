@@ -6,7 +6,8 @@ import { prisma } from "@/lib/db";
 import { OAUTH_ROLE_COOKIE, parseOAuthRole } from "./oauth-role";
 
 export const authOptions: NextAuthOptions = {
-  adapter: PrismaAdapter(prisma),
+  // @next-auth/prisma-adapter's types predate Prisma 7's client; the runtime interface it uses is unchanged.
+  adapter: PrismaAdapter(prisma as unknown as Parameters<typeof PrismaAdapter>[0]),
   providers: [
     GoogleProvider({
       // Server-only env values; never inline OAuth credentials here.

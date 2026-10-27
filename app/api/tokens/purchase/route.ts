@@ -1,7 +1,7 @@
 import { prisma } from "@/lib/db";
 import { UnauthorizedError, ValidationError } from "@/lib/api/errors";
 import { withErrorHandler, successResponse } from "@/lib/api/response";
-import { getSessionUser } from "@/lib/auth/session";
+import { getSessionUser } from "@/lib/auth/session-user";
 import { TOKEN_TIERS } from "@/lib/tokens";
 
 export const POST = withErrorHandler(async (request: Request) => {

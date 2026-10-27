@@ -22,6 +22,7 @@ export default defineConfig({
         "**/*.{test,spec}.{ts,tsx}",
         "**/node_modules/**",
         "**/*.d.ts",
+        "lib/generated/**",
       ],
     },
   },

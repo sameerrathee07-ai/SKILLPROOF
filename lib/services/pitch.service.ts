@@ -12,6 +12,13 @@ import {
 const PROPOSAL_STATUSES = ["SUBMITTED", "SHORTLISTED", "ACCEPTED", "DECLINED"] as const;
 type ProposalStatus = (typeof PROPOSAL_STATUSES)[number];
 
+const PROPOSAL_TRANSITIONS: Record<ProposalStatus, readonly ProposalStatus[]> = {
+  SUBMITTED: ["SHORTLISTED", "ACCEPTED", "DECLINED"],
+  SHORTLISTED: ["ACCEPTED", "DECLINED"],
+  ACCEPTED: [],
+  DECLINED: [],
+};
+
 export interface SubmitPitchDTO {
   problemId: string;
   solverId: string;
@@ -292,6 +299,7 @@ export class PitchService {
 
       return {
         ...p,
+        solver: { ...p.solver, email: null },
         stepDataParsed,
         scoreBreakdownParsed,
       };
@@ -371,6 +379,16 @@ export class PitchService {
       throw new NotFoundError(`Proposal with id "${pitchId}" not found.`);
     }
 
+    const currentStatus = pitch.status as ProposalStatus;
+    if (
+      normalized !== currentStatus &&
+      !PROPOSAL_TRANSITIONS[currentStatus]?.includes(normalized)
+    ) {
+      throw new ValidationError(
+        `Cannot move a proposal from ${currentStatus} to ${normalized}.`
+      );
+    }
+
     const notes =
       posterNotes === undefined ? undefined : posterNotes.trim().slice(0, 4000);
 
@@ -391,6 +409,7 @@ export class PitchService {
     });
 
     if (
+      normalized !== currentStatus &&
       normalized !== "SUBMITTED" &&
       updated.solver.email
     ) {
@@ -403,6 +422,14 @@ export class PitchService {
       });
     }
 
-    return updated;
+    const canContact = normalized === "SHORTLISTED" || normalized === "ACCEPTED";
+
+    return {
+      ...updated,
+      solver: {
+        ...updated.solver,
+        email: canContact ? updated.solver.email : null,
+      },
+    };
   }
 }

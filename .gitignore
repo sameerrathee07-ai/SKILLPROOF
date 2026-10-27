@@ -36,3 +36,6 @@ next-env.d.ts
 
 # prisma dev database
 prisma/dev.db*
+
+# prisma generated client
+/lib/generated/

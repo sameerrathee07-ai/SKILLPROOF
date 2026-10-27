@@ -1,6 +1,6 @@
 import { getServerSession } from "next-auth";
 import { authOptions } from "./authOptions";
-import { getSessionUser } from "./session";
+import { getSessionUser } from "./session-user";
 
 /**
  * Resolve the caller from either the email session cookie or a Google session.

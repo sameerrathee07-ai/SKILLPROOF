@@ -7,7 +7,7 @@ const { prismaMock, getSessionUserMock } = vi.hoisted(() => ({
 }));
 
 vi.mock("@/lib/db", () => ({ prisma: prismaMock }));
-vi.mock("@/lib/auth/session", () => ({ getSessionUser: getSessionUserMock }));
+vi.mock("@/lib/auth/session-user", () => ({ getSessionUser: getSessionUserMock }));
 
 const req = (body: unknown) =>
   new Request("http://localhost/api/tokens/purchase", {
