@@ -1,4 +1,5 @@
 import Link from "next/link";
+import type { Metadata } from "next";
 import { 
   Building2, 
   ArrowRight, 
@@ -15,6 +16,43 @@ import Header from "@/components/ui/hero-01-utils/header";
 import { GradientBars } from "@/components/ui/gradient-bars-background";
 
 export const dynamic = "force-dynamic";
+
+const BASE_URL = process.env.NEXT_PUBLIC_APP_URL || "https://skillproof.app";
+
+export function generateMetadata({
+  searchParams,
+}: {
+  searchParams: { category?: string };
+}): Metadata {
+  const category = searchParams?.category;
+  const label =
+    category && category !== "ALL"
+      ? category.replace(/_/g, " ").toLowerCase()
+      : null;
+  const title = label
+    ? `Open ${label} education challenges`
+    : "Open education challenges";
+  const description =
+    "Browse education challenges from coaching centers, tuition academies, and college departments. Submit a structured five-step proposal through SkillProof's deterministic quality gate.";
+
+  return {
+    title,
+    description,
+    alternates: { canonical: "/problems" },
+    openGraph: {
+      title: `${title} | SkillProof`,
+      description,
+      url: `${BASE_URL}/problems`,
+      siteName: "SkillProof",
+      type: "website",
+    },
+    twitter: {
+      card: "summary",
+      title: `${title} | SkillProof`,
+      description,
+    },
+  };
+}
 
 export default async function ProblemsPage({
   searchParams,

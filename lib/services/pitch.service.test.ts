@@ -5,8 +5,14 @@ import { ValidationError, NotFoundError } from "@/lib/api/errors";
 const { prismaMock, userServiceMock, evaluatePitchMock } = vi.hoisted(() => ({
   prismaMock: {
     problem: { findUnique: vi.fn() },
-    pitch: { create: vi.fn(), findUnique: vi.fn(), findMany: vi.fn(), count: vi.fn() },
-    user: { updateMany: vi.fn(), findUnique: vi.fn() },
+    pitch: {
+      create: vi.fn(),
+      update: vi.fn(),
+      findUnique: vi.fn(),
+      findMany: vi.fn(),
+      count: vi.fn(),
+    },
+    user: { updateMany: vi.fn(), update: vi.fn(), findUnique: vi.fn() },
   },
   userServiceMock: {
     getSolver: vi.fn(),
@@ -18,6 +24,11 @@ const { prismaMock, userServiceMock, evaluatePitchMock } = vi.hoisted(() => ({
 vi.mock("@/lib/db", () => ({ prisma: prismaMock }));
 vi.mock("@/lib/scoring/engine", () => ({ evaluatePitch: evaluatePitchMock }));
 vi.mock("./user.service", () => ({ UserService: userServiceMock }));
+vi.mock("@/lib/email/service", () => ({
+  sendGateEvaluationResult: vi.fn(),
+  sendNewVettedProposalAlert: vi.fn(),
+  sendProposalStatusUpdate: vi.fn(),
+}));
 
 const pitchInput = {
   step1Diagnosis:
@@ -53,10 +64,12 @@ describe("PitchService", () => {
   beforeEach(() => {
     prismaMock.problem.findUnique.mockReset();
     prismaMock.pitch.create.mockReset();
+    prismaMock.pitch.update.mockReset();
     prismaMock.pitch.findUnique.mockReset();
     prismaMock.pitch.findMany.mockReset();
     prismaMock.pitch.count.mockReset();
     prismaMock.user.updateMany.mockReset();
+    prismaMock.user.update.mockReset();
     prismaMock.user.findUnique.mockReset();
     userServiceMock.getSolver.mockReset();
     userServiceMock.rewardSolverCredibility.mockReset();
@@ -349,6 +362,167 @@ describe("PitchService", () => {
       prismaMock.problem.findUnique.mockResolvedValue({ id: "p1", postedById: "poster-1" });
 
       await expect(PitchService.getVettedInbox("p1")).rejects.toBeInstanceOf(NotFoundError);
+    });
+
+    it("allows the organization owner", async () => {
+      prismaMock.problem.findUnique.mockResolvedValue({
+        id: "p1",
+        postedById: "poster-1",
+        organization: { ownerId: "owner-1" },
+      });
+      prismaMock.pitch.findMany.mockResolvedValue([]);
+      prismaMock.pitch.count.mockResolvedValue(0);
+
+      const result = await PitchService.getVettedInbox("p1", {
+        id: "owner-1",
+        role: "POSTER",
+      });
+
+      expect(result.vettedCount).toBe(0);
+    });
+  });
+
+  describe("idempotency", () => {
+    it("returns the existing pitch for the same solver without charging tokens", async () => {
+      prismaMock.problem.findUnique.mockResolvedValue({ id: "p1" });
+      userServiceMock.getSolver.mockResolvedValue({ id: "solver-1", tokens: 44 });
+      prismaMock.pitch.findUnique.mockResolvedValue({
+        id: "pitch-existing",
+        solverId: "solver-1",
+        solver: { id: "solver-1", tokens: 44 },
+        scoreBreakdown: JSON.stringify({ overallScore: 8, passed: true }),
+        stepData: "{}",
+      });
+
+      const result = await PitchService.submitAndEvaluate({
+        problemId: "p1",
+        solverId: "solver-1",
+        pitchInput,
+        idempotencyKey: "key-1",
+      });
+
+      expect(result.idempotent).toBe(true);
+      expect(result.pitchId).toBe("pitch-existing");
+      expect(prismaMock.user.updateMany).not.toHaveBeenCalled();
+      expect(prismaMock.pitch.create).not.toHaveBeenCalled();
+    });
+
+    it("rejects a key already used by another solver", async () => {
+      prismaMock.problem.findUnique.mockResolvedValue({ id: "p1" });
+      userServiceMock.getSolver.mockResolvedValue({ id: "solver-1", tokens: 44 });
+      prismaMock.pitch.findUnique.mockResolvedValue({
+        id: "pitch-existing",
+        solverId: "solver-2",
+        solver: { id: "solver-2", tokens: 44 },
+        scoreBreakdown: "{}",
+        stepData: "{}",
+      });
+
+      await expect(
+        PitchService.submitAndEvaluate({
+          problemId: "p1",
+          solverId: "solver-1",
+          pitchInput,
+          idempotencyKey: "key-1",
+        })
+      ).rejects.toBeInstanceOf(ValidationError);
+    });
+
+    it("refunds the token and returns the winner on a concurrent unique conflict", async () => {
+      prismaMock.problem.findUnique.mockResolvedValue({ id: "p1" });
+      userServiceMock.getSolver.mockResolvedValue({ id: "solver-1", tokens: 5 });
+      prismaMock.pitch.findUnique
+        .mockResolvedValueOnce(null)
+        .mockResolvedValueOnce({
+          id: "pitch-winner",
+          solverId: "solver-1",
+          solver: { id: "solver-1", tokens: 4 },
+          scoreBreakdown: JSON.stringify({ overallScore: 8, passed: true }),
+          stepData: "{}",
+        });
+      prismaMock.user.updateMany.mockResolvedValue({ count: 1 });
+      prismaMock.user.findUnique.mockResolvedValue({ tokens: 4 });
+      evaluatePitchMock.mockReturnValue({ overallScore: 8, passed: true });
+      prismaMock.pitch.create.mockRejectedValue({ code: "P2002" });
+      prismaMock.user.update.mockResolvedValue({});
+
+      const result = await PitchService.submitAndEvaluate({
+        problemId: "p1",
+        solverId: "solver-1",
+        pitchInput,
+        idempotencyKey: "key-1",
+      });
+
+      expect(result.idempotent).toBe(true);
+      expect(result.pitchId).toBe("pitch-winner");
+      expect(prismaMock.user.update).toHaveBeenCalledWith({
+        where: { id: "solver-1" },
+        data: { tokens: { increment: 1 } },
+      });
+    });
+  });
+
+  describe("updateProposalStatus", () => {
+    it("rejects an unknown status before touching the database", async () => {
+      await expect(
+        PitchService.updateProposalStatus("pitch-1", { id: "poster-1", role: "POSTER" }, "BOGUS")
+      ).rejects.toBeInstanceOf(ValidationError);
+
+      expect(prismaMock.pitch.findUnique).not.toHaveBeenCalled();
+    });
+
+    it("hides a proposal from a different poster", async () => {
+      prismaMock.pitch.findUnique.mockResolvedValue({
+        id: "pitch-1",
+        solver: { id: "solver-1" },
+        problem: {
+          postedById: "poster-1",
+          organization: { ownerId: "owner-1" },
+        },
+      });
+
+      await expect(
+        PitchService.updateProposalStatus(
+          "pitch-1",
+          { id: "poster-2", role: "POSTER" },
+          "SHORTLISTED"
+        )
+      ).rejects.toBeInstanceOf(NotFoundError);
+    });
+
+    it("lets the organization owner update status and notes", async () => {
+      prismaMock.pitch.findUnique.mockResolvedValue({
+        id: "pitch-1",
+        solver: { id: "solver-1", email: "solver@example.com" },
+        problem: {
+          postedById: "poster-1",
+          organization: { ownerId: "owner-1" },
+        },
+      });
+      prismaMock.pitch.update.mockResolvedValue({
+        id: "pitch-1",
+        status: "SHORTLISTED",
+        posterNotes: "Strong proposal.",
+        solver: { id: "solver-1", email: "solver@example.com", name: "Solver" },
+        problem: { title: "Challenge", organization: { ownerId: "owner-1" } },
+      });
+
+      const result = await PitchService.updateProposalStatus(
+        "pitch-1",
+        { id: "owner-1", role: "POSTER" },
+        "shortlisted",
+        "Strong proposal."
+      );
+
+      expect(result.status).toBe("SHORTLISTED");
+      expect(prismaMock.pitch.update).toHaveBeenCalledWith({
+        where: { id: "pitch-1" },
+        data: { status: "SHORTLISTED", posterNotes: "Strong proposal." },
+        include: {
+          solver: true,
+          problem: { include: { organization: true } },
+        },
+      });
     });
   });
 });

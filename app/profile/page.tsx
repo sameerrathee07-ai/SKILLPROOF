@@ -47,6 +47,10 @@ export default function ProfilePage() {
   const [bio, setBio] = useState(user?.bio || "");
   const [saved, setSaved] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [activeTab, setActiveTab] = useState<"PROFILE" | "SUBMISSIONS">("PROFILE");
+  const [submissions, setSubmissions] = useState<any[]>([]);
+  const [submissionsLoading, setSubmissionsLoading] = useState(false);
+  const [submissionsError, setSubmissionsError] = useState("");
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const handleDeviceImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -85,6 +89,38 @@ export default function ProfilePage() {
     }
   }, [user]);
 
+  useEffect(() => {
+    if (activeTab !== "SUBMISSIONS" || !user) return;
+
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 15000);
+    setSubmissionsLoading(true);
+    setSubmissionsError("");
+
+    fetch("/api/users/submissions", { signal: controller.signal, cache: "no-store" })
+      .then(async (response) => {
+        if (!response.ok) throw new Error("Unable to load submissions.");
+        return response.json();
+      })
+      .then((data) => setSubmissions(Array.isArray(data) ? data : []))
+      .catch((error) => {
+        if (error?.name === "AbortError") {
+          setSubmissionsError("The request timed out. Your saved profile is unaffected. Try again.");
+        } else {
+          setSubmissionsError("Could not load your submissions. Try again.");
+        }
+      })
+      .finally(() => {
+        clearTimeout(timeout);
+        setSubmissionsLoading(false);
+      });
+
+    return () => {
+      clearTimeout(timeout);
+      controller.abort();
+    };
+  }, [activeTab, user]);
+
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsSubmitting(true);
@@ -93,7 +129,6 @@ export default function ProfilePage() {
       name,
       email,
       image: image.trim() || null,
-      role,
       age: age ? Number(age) : null,
       company: company.trim() || null,
       headline: headline.trim() || null,
@@ -125,6 +160,40 @@ export default function ProfilePage() {
     .join("")
     .slice(0, 2)
     .toUpperCase() || "SP";
+
+  const submissionBadge = (submission: any) => {
+    if (!submission.passed) {
+      return {
+        label: "Gate Not Passed",
+        className: "border-rose-500/20 bg-rose-500/10 text-rose-400",
+      };
+    }
+
+    const status = submission.status || "SUBMITTED";
+    if (status === "SHORTLISTED") {
+      return {
+        label: "Shortlisted",
+        className: "border-amber-500/20 bg-amber-500/10 text-amber-400",
+      };
+    }
+    if (status === "ACCEPTED") {
+      return {
+        label: "Accepted",
+        className: "border-emerald-500/20 bg-emerald-500/10 text-emerald-400",
+      };
+    }
+    if (status === "DECLINED") {
+      return {
+        label: "Declined",
+        className: "border-rose-500/20 bg-rose-500/10 text-rose-400",
+      };
+    }
+
+    return {
+      label: "Under Review",
+      className: "border-slate-500/20 bg-slate-500/10 text-slate-300",
+    };
+  };
 
   if (loading) {
     return (
@@ -218,7 +287,36 @@ export default function ProfilePage() {
             </div>
           </div>
 
-          <form onSubmit={handleSave} className="space-y-8">
+          {user?.role === "SOLVER" && (
+            <div className="mb-6 flex items-center gap-2 border-b border-white/10 pb-3">
+              <button
+                type="button"
+                onClick={() => setActiveTab("PROFILE")}
+                className={`inline-flex items-center gap-2 rounded-md px-3 py-2 text-sm font-semibold transition ${
+                  activeTab === "PROFILE"
+                    ? "bg-blue-500/10 text-blue-300 border border-blue-500/20"
+                    : "text-slate-400 hover:text-white border border-transparent"
+                }`}
+              >
+                <User className="w-4 h-4" />
+                Profile
+              </button>
+              <button
+                type="button"
+                onClick={() => setActiveTab("SUBMISSIONS")}
+                className={`inline-flex items-center gap-2 rounded-md px-3 py-2 text-sm font-semibold transition ${
+                  activeTab === "SUBMISSIONS"
+                    ? "bg-blue-500/10 text-blue-300 border border-blue-500/20"
+                    : "text-slate-400 hover:text-white border border-transparent"
+                }`}
+              >
+                <Briefcase className="w-4 h-4" />
+                My Submissions
+              </button>
+            </div>
+          )}
+
+          <form onSubmit={handleSave} className={activeTab === "PROFILE" ? "space-y-8" : "hidden"}>
             {/* Avatar Section */}
             <div className="rounded-xl border border-white/10 bg-slate-950/70 backdrop-blur-xl p-6 sm:p-8 space-y-6">
               <h2 className="text-lg font-semibold text-white flex items-center gap-2">
@@ -382,13 +480,16 @@ export default function ProfilePage() {
                   <select
                     id="role"
                     value={role}
-                    onChange={(e) => setRole(e.target.value as "SOLVER" | "POSTER" | "ADMIN")}
-                    className="mt-1.5 w-full h-10 px-3 rounded-md bg-slate-900/80 border border-white/10 text-white text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    disabled
+                    className="mt-1.5 w-full h-10 px-3 rounded-md bg-slate-900/80 border border-white/10 text-slate-300 text-sm opacity-80 cursor-not-allowed"
                   >
                     <option value="SOLVER">Student Solver (Pitches & Challenges)</option>
                     <option value="POSTER">Organization Poster (Posts Problems)</option>
                     <option value="ADMIN">Administrator (Gate Calibration)</option>
                   </select>
+                  <p className="text-[10px] text-slate-500 mt-1">
+                    Roles are assigned at signup. Contact SkillProof support to change yours.
+                  </p>
                 </div>
               </div>
 
@@ -440,6 +541,88 @@ export default function ProfilePage() {
               </Button>
             </div>
           </form>
+
+          {activeTab === "SUBMISSIONS" && user?.role === "SOLVER" && (
+            <section className="space-y-4">
+              <div>
+                <h2 className="text-xl font-semibold text-white">My Submissions</h2>
+                <p className="mt-1 text-sm text-slate-400">
+                  Every proposal you have submitted, its gate score, and the organization review state.
+                </p>
+              </div>
+
+              {submissionsLoading ? (
+                <div className="rounded-lg border border-white/10 bg-slate-950/70 p-6 text-sm text-slate-400">
+                  Loading your submissions...
+                </div>
+              ) : submissionsError ? (
+                <div className="rounded-lg border border-rose-500/20 bg-rose-500/10 p-6 text-sm text-rose-300">
+                  {submissionsError}
+                </div>
+              ) : submissions.length === 0 ? (
+                <div className="rounded-lg border border-white/10 bg-slate-950/70 p-6">
+                  <p className="text-sm font-medium text-white">No submissions yet.</p>
+                  <p className="mt-1 text-sm text-slate-400">
+                    Browse open challenges and submit your first proposal.
+                  </p>
+                  <Link
+                    href="/problems"
+                    className="mt-4 inline-flex items-center rounded-md border border-white/10 bg-white/5 px-3 py-2 text-sm font-semibold text-white transition hover:bg-white/10"
+                  >
+                    Browse challenges
+                  </Link>
+                </div>
+              ) : (
+                <div className="space-y-3">
+                  {submissions.map((submission) => {
+                    const badge = submissionBadge(submission);
+                    return (
+                      <Link
+                        key={submission.id}
+                        href={`/problems/${submission.problemId}`}
+                        className="block rounded-lg border border-white/10 bg-slate-950/70 p-5 transition hover:border-white/20 hover:bg-slate-900/80"
+                      >
+                        <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+                          <div>
+                            <h3 className="text-base font-semibold text-white">
+                              {submission.problem?.title || "Challenge"}
+                            </h3>
+                            <p className="mt-1 flex items-center gap-1.5 text-xs text-slate-400">
+                              <Building className="w-3.5 h-3.5" />
+                              {submission.problem?.organization?.name || "Organization"}
+                              {submission.problem?.organization?.type
+                                ? ` / ${submission.problem.organization.type.replaceAll("_", " ")}`
+                                : ""}
+                            </p>
+                          </div>
+                          <span
+                            className={`inline-flex w-fit items-center rounded-md border px-2.5 py-1 text-xs font-semibold ${badge.className}`}
+                          >
+                            {badge.label}
+                          </span>
+                        </div>
+
+                        <div className="mt-4 flex flex-wrap items-center gap-4 text-xs text-slate-400">
+                          <span className="inline-flex items-center gap-1.5">
+                            <Star className="w-3.5 h-3.5 text-amber-400" />
+                            Gate score {Number(submission.score || 0).toFixed(1)}
+                          </span>
+                          <span className="inline-flex items-center gap-1.5">
+                            <Calendar className="w-3.5 h-3.5" />
+                            {new Date(submission.createdAt).toLocaleDateString()}
+                          </span>
+                          <span className="inline-flex items-center gap-1.5">
+                            <Briefcase className="w-3.5 h-3.5" />
+                            {submission.problem?.frictionCategory?.replaceAll("_", " ") || "General"}
+                          </span>
+                        </div>
+                      </Link>
+                    );
+                  })}
+                </div>
+              )}
+            </section>
+          )}
         </main>
       </div>
     </div>

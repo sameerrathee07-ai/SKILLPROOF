@@ -10,6 +10,7 @@ export interface CreateProblemInput {
   orgName?: string;
   orgType?: string;
   postedById?: string;
+  ownerId?: string;
 }
 
 export interface ProblemFilter {
@@ -110,6 +111,7 @@ export class ProblemService {
       const org = await OrganizationService.findOrCreateOrganization({
         name: input.orgName || "Premier Education Center",
         type: input.orgType || "COACHING_CENTER",
+        ownerId: input.ownerId,
       });
       organizationId = org.id;
     }
@@ -126,6 +128,44 @@ export class ProblemService {
       include: {
         organization: true,
       },
+    });
+  }
+
+  /**
+   * Open or close a challenge for the owning poster.
+   */
+  static async updateProblemStatus(
+    id: string,
+    status: string,
+    requester: { id: string; role: string }
+  ) {
+    const normalized = status?.toUpperCase();
+    if (normalized !== "OPEN" && normalized !== "CLOSED") {
+      throw new ValidationError(`Invalid problem status "${status}".`);
+    }
+
+    const problem = await prisma.problem.findUnique({
+      where: { id },
+      include: { organization: true },
+    });
+
+    if (!problem) {
+      throw new NotFoundError(`Problem with id "${id}" not found.`);
+    }
+
+    const canManage =
+      requester.role === "ADMIN" ||
+      problem.postedById === requester.id ||
+      problem.organization.ownerId === requester.id;
+
+    if (!canManage) {
+      throw new NotFoundError(`Problem with id "${id}" not found.`);
+    }
+
+    return prisma.problem.update({
+      where: { id },
+      data: { status: normalized },
+      include: { organization: true },
     });
   }
 

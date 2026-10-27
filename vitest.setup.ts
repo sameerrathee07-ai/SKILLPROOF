@@ -1,5 +1,10 @@
 import "@testing-library/jest-dom/vitest";
-import { vi } from "vitest";
+import { beforeEach, vi } from "vitest";
+import { resetRateLimitsForTests } from "./lib/api/rate-limit";
+
+beforeEach(() => {
+  resetRateLimitsForTests();
+});
 
 vi.mock("next-auth/react", () => ({
   SessionProvider: ({ children }: { children: React.ReactNode }) => children,

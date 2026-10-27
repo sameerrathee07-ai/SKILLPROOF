@@ -40,8 +40,20 @@ const DEFAULT_STATE: PitchFormState = {
   revisionCount: 0,
 };
 
+function createIdempotencyKey(problemId: string) {
+  const random =
+    typeof crypto !== "undefined" && typeof crypto.randomUUID === "function"
+      ? crypto.randomUUID()
+      : `${Date.now()}_${Math.random().toString(36).slice(2)}`;
+  return `pitch_sub_${problemId}_${random}`;
+}
+
 export function usePitchForm(problemId: string, initialRevision = 0, initialStep = 1) {
   const draftKey = `skillproof_pitch_draft_${problemId}`;
+  const idempotencyStorageKey = `skillproof_pitch_idempotency_${problemId}`;
+  const [idempotencyKey, setIdempotencyKey] = useState(() =>
+    createIdempotencyKey(problemId)
+  );
 
   const [form, setForm] = useState<PitchFormState>(() => {
     return { ...DEFAULT_STATE, revisionCount: initialRevision };
@@ -82,6 +94,85 @@ export function usePitchForm(problemId: string, initialRevision = 0, initialStep
       console.warn("Failed to persist pitch draft:", e);
     }
   }, [form, draftKey, isLoaded, problemId]);
+
+  // Keep the idempotency key stable per draft, including across tabs.
+  useEffect(() => {
+    if (!problemId) return;
+    try {
+      const existing = localStorage.getItem(idempotencyStorageKey);
+      if (existing) {
+        setIdempotencyKey(existing);
+      } else {
+        localStorage.setItem(idempotencyStorageKey, idempotencyKey);
+      }
+    } catch (e) {
+      console.warn("Failed to persist pitch idempotency key:", e);
+    }
+  }, [problemId, idempotencyStorageKey, idempotencyKey]);
+
+  // Synchronize draft edits from other tabs without clobbering revision state.
+  useEffect(() => {
+    if (!problemId) return;
+    const handleStorage = (event: StorageEvent) => {
+      if (event.key !== draftKey || !event.newValue) return;
+      try {
+        const parsed = JSON.parse(event.newValue);
+        setForm((prev) => {
+          const next = { ...prev, ...parsed, revisionCount: prev.revisionCount };
+          return JSON.stringify(next) === JSON.stringify(prev) ? prev : next;
+        });
+      } catch (e) {
+        console.warn("Failed to sync pitch draft from another tab:", e);
+      }
+    };
+    window.addEventListener("storage", handleStorage);
+    return () => window.removeEventListener("storage", handleStorage);
+  }, [draftKey, problemId]);
+
+  const hasUnsavedDraft = useMemo(() => {
+    const values = [
+      form.step1Diagnosis,
+      form.step2Solution,
+      form.step2Deliverables,
+      form.step2Milestones,
+      form.step4Budget,
+      form.step4CostBreakdown,
+      form.step5Experience,
+      form.step5ProofLinks,
+      form.step5Constraints,
+    ];
+    return (
+      values.some((value) => value.trim().length > 0) ||
+      form.step3Alternatives.some(
+        (alternative) =>
+          alternative.name.trim().length > 0 ||
+          (alternative.pros || "").trim().length > 0 ||
+          (alternative.cons || "").trim().length > 0 ||
+          (alternative.rejectionReason || "").trim().length > 0
+      )
+    );
+  }, [form]);
+
+  useEffect(() => {
+    if (!isLoaded || !hasUnsavedDraft) return;
+    const handleBeforeUnload = (event: BeforeUnloadEvent) => {
+      event.preventDefault();
+      event.returnValue = "";
+    };
+    window.addEventListener("beforeunload", handleBeforeUnload);
+    return () => window.removeEventListener("beforeunload", handleBeforeUnload);
+  }, [isLoaded, hasUnsavedDraft]);
+
+  const resetIdempotencyKey = useCallback(() => {
+    const nextKey = createIdempotencyKey(problemId);
+    setIdempotencyKey(nextKey);
+    try {
+      localStorage.setItem(idempotencyStorageKey, nextKey);
+    } catch (e) {
+      console.warn("Failed to rotate pitch idempotency key:", e);
+    }
+    return nextKey;
+  }, [problemId, idempotencyStorageKey]);
 
   // Update simple string field and clear any error on that field
   const updateField = useCallback(
@@ -143,10 +234,11 @@ export function usePitchForm(problemId: string, initialRevision = 0, initialStep
     try {
       localStorage.removeItem(draftKey);
     } catch {}
+    resetIdempotencyKey();
     setForm(DEFAULT_STATE);
     setStepErrors({});
     setCurrentStep(1);
-  }, [draftKey]);
+  }, [draftKey, resetIdempotencyKey]);
 
   // Convert state to PitchInput
   const pitchInput: PitchInput = useMemo(
@@ -212,6 +304,9 @@ export function usePitchForm(problemId: string, initialRevision = 0, initialStep
     stepErrors,
     setStepErrors,
     isLoaded,
+    hasUnsavedDraft,
+    idempotencyKey,
+    resetIdempotencyKey,
     pitchInput,
     knockoutStatus,
     updateField,

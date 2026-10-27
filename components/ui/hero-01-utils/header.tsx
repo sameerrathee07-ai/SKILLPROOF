@@ -19,6 +19,7 @@ export type NavigationSection = {
 export const defaultHeaderNav: NavigationSection[] = [
   { title: "Home", href: "/" },
   { title: "Challenges", href: "/problems" },
+  { title: "Dashboard", href: "/org/dashboard" },
   { title: "Calibration", href: "/admin/calibrate" },
   { title: "About us", href: "/about" },
   { title: "Services", href: "/services" },
@@ -92,7 +93,11 @@ const Header = ({ navigationData, className }: HeaderProps) => {
   const [isOpen, setIsOpen] = useState(false);
 
   const links = (navigationData && navigationData.length > 0 ? navigationData : defaultHeaderNav).filter(
-    (item) => item.href !== "/admin/calibrate" || user?.role === "ADMIN"
+    (item) =>
+      (item.href !== "/admin/calibrate" || user?.role === "ADMIN") &&
+      (item.href !== "/org/dashboard" ||
+        user?.role === "POSTER" ||
+        user?.role === "ADMIN")
   );
 
   const handleScroll = useCallback(() => {

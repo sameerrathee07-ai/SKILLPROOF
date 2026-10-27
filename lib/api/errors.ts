@@ -34,3 +34,18 @@ export class UnauthorizedError extends AppError {
     super(message, 401, "UNAUTHORIZED");
   }
 }
+
+export class ForbiddenError extends AppError {
+  constructor(message = "Forbidden") {
+    super(message, 403, "FORBIDDEN");
+  }
+}
+
+export class RateLimitError extends AppError {
+  public readonly retryAfterSeconds: number;
+
+  constructor(message = "Too many requests", retryAfterSeconds = 60) {
+    super(message, 429, "RATE_LIMITED", { retryAfterSeconds });
+    this.retryAfterSeconds = retryAfterSeconds;
+  }
+}

@@ -3,29 +3,30 @@ generator client {
 }
 
 datasource db {
-  provider = "sqlite"
+  provider = "postgresql"
   url      = env("DATABASE_URL")
 }
 
 model User {
-  id               String    @id @default(cuid())
-  email            String?   @unique
-  name             String?
-  emailVerified    DateTime?
-  image            String?
-  role             String    @default("SOLVER") // SOLVER, POSTER, ADMIN
-  tokens           Int       @default(50)
-  credibilityScore Float     @default(1.0)
-  age              Int?
-  company          String?
-  bio              String?
-  headline         String?
-  createdAt        DateTime  @default(now())
-  pitches          Pitch[]
-  problemsPosted   Problem[] @relation("PostedProblems")
-  accounts         Account[]
-  sessions         Session[]
-  tokenPurchases   TokenPurchase[]
+  id                 String          @id @default(cuid())
+  email              String?         @unique
+  name               String?
+  emailVerified      DateTime?
+  image              String?
+  role               String          @default("SOLVER") // SOLVER, POSTER, ADMIN
+  tokens             Int             @default(50)
+  credibilityScore   Float           @default(1.0)
+  age                Int?
+  company            String?
+  bio                String?
+  headline           String?
+  createdAt          DateTime        @default(now())
+  pitches            Pitch[]
+  problemsPosted     Problem[]       @relation("PostedProblems")
+  ownedOrganizations Organization[]  @relation("OrganizationOwner")
+  accounts           Account[]
+  sessions           Session[]
+  tokenPurchases     TokenPurchase[]
 }
 
 model Account {
@@ -66,9 +67,13 @@ model VerificationToken {
 model Organization {
   id        String    @id @default(cuid())
   name      String
-  type      String    // COACHING_CENTER, TUITION_ACADEMY, COLLEGE_DEPT
+  type      String // COACHING_CENTER, TUITION_ACADEMY, COLLEGE_DEPT
+  ownerId   String?
+  owner     User?     @relation("OrganizationOwner", fields: [ownerId], references: [id], onDelete: SetNull)
   createdAt DateTime  @default(now())
   problems  Problem[]
+
+  @@index([ownerId])
 }
 
 model Problem {
@@ -79,10 +84,12 @@ model Problem {
   postedBy         User?        @relation("PostedProblems", fields: [postedById], references: [id], onDelete: SetNull)
   title            String
   description      String
-  frictionCategory String       // SCHEDULING, STUDENT_RETENTION, ADMIN_WORKFLOW
+  frictionCategory String // SCHEDULING, STUDENT_RETENTION, ADMIN_WORKFLOW
   status           String       @default("OPEN") // OPEN, CLOSED
   createdAt        DateTime     @default(now())
   pitches          Pitch[]
+
+  @@index([status, createdAt])
 }
 
 model Pitch {
@@ -91,13 +98,20 @@ model Pitch {
   problem        Problem  @relation(fields: [problemId], references: [id], onDelete: Cascade)
   solverId       String
   solver         User     @relation(fields: [solverId], references: [id], onDelete: Cascade)
-  stepData       String   // JSON string storing the 5 steps
+  stepData       String // JSON string storing the 5 steps
   score          Float
   passed         Boolean
   knockedOut     Boolean
-  scoreBreakdown String   // JSON string storing dimensional breakdown and actionable feedback
+  scoreBreakdown String // JSON string storing dimensional breakdown and actionable feedback
   revisionCount  Int      @default(0)
+  status         String   @default("SUBMITTED") // SUBMITTED, SHORTLISTED, ACCEPTED, DECLINED
+  posterNotes    String?
+  idempotencyKey String?  @unique
   createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  @@index([problemId, passed])
+  @@index([solverId, createdAt])
 }
 
 model TokenPurchase {

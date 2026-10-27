@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { 
@@ -25,16 +25,19 @@ export default function NewProblemPage() {
   const [frictionCategory, setFrictionCategory] = useState("STUDENT_RETENTION");
   const [description, setDescription] = useState("");
   const [submitting, setSubmitting] = useState(false);
+  const submittingRef = useRef(false);
 
   useEffect(() => {
     async function loadOrgs() {
       try {
-        const res = await fetch("/api/organizations");
+        const res = await fetch("/api/organizations?mine=1");
         if (res.ok) {
           const data = await res.json();
           setOrganizations(data);
           if (data.length > 0) {
             setSelectedOrgId(data[0].id);
+          } else {
+            setIsCreatingNewOrg(true);
           }
         }
       } catch (e) {
@@ -46,12 +49,17 @@ export default function NewProblemPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (submittingRef.current) return;
     if (!title || !description) {
       alert("Please provide problem title and description");
       return;
     }
 
+    submittingRef.current = true;
     setSubmitting(true);
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 15000);
+
     try {
       const payload: any = {
         title,
@@ -70,19 +78,26 @@ export default function NewProblemPage() {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload),
+        signal: controller.signal,
       });
 
       const data = await res.json();
       if (!res.ok) {
         alert(data.error || "Failed to post challenge");
-        setSubmitting(false);
         return;
       }
 
       router.push(`/org/problems/${data.id}/proposals`);
     } catch (e) {
       console.error(e);
-      alert("Submission error");
+      if (e instanceof DOMException && e.name === "AbortError") {
+        alert("The request timed out. Check your connection and try again.");
+      } else {
+        alert("Submission error");
+      }
+    } finally {
+      clearTimeout(timeoutId);
+      submittingRef.current = false;
       setSubmitting(false);
     }
   };

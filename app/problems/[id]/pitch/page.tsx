@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useParams, useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { 
@@ -31,6 +31,7 @@ export default function PitchWizardPage() {
   const [problem, setProblem] = useState<any>(null);
   const [loadingProblem, setLoadingProblem] = useState(true);
   const [submitting, setSubmitting] = useState(false);
+  const submittingRef = useRef(false);
 
   // Modular state management hook for all 5 steps, drafts, and gate validation
   const {
@@ -47,6 +48,8 @@ export default function PitchWizardPage() {
     nextStep,
     prevStep,
     goToStep,
+    idempotencyKey,
+    resetIdempotencyKey,
   } = usePitchForm(problemId, isRevision ? 1 : 0, initialStep);
 
   // Fetch problem details
@@ -70,6 +73,8 @@ export default function PitchWizardPage() {
   }, [problemId]);
 
   const handleSubmit = async () => {
+    if (submittingRef.current) return;
+    submittingRef.current = true;
     setSubmitting(true);
 
     const validation = validateFullPitch(pitchInput);
@@ -83,21 +88,42 @@ export default function PitchWizardPage() {
       else if (keys.some((k) => k.startsWith("step4"))) targetStep = 4;
       else if (keys.some((k) => k.startsWith("step5"))) targetStep = 5;
       goToStep(targetStep);
+      submittingRef.current = false;
       setSubmitting(false);
       return;
     }
 
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 15000);
+
     try {
       const res = await fetch(`/api/problems/${problemId}/pitch`, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: {
+          "Content-Type": "application/json",
+          "Idempotency-Key": idempotencyKey,
+        },
         body: JSON.stringify({
           pitchInput,
           revisionCount: form.revisionCount,
         }),
+        signal: controller.signal,
       });
 
       const data = await res.json();
+
+      if (res.status === 401) {
+        try {
+          localStorage.setItem(
+            `skillproof_pitch_draft_${problemId}`,
+            JSON.stringify(form)
+          );
+        } catch {}
+        alert("Your session expired. Your draft is saved locally. Please sign in again.");
+        router.push(`/login?next=${encodeURIComponent(`/problems/${problemId}/pitch`)}`);
+        return;
+      }
+
       if (!res.ok) {
         if (data.details && typeof data.details === "object") {
           setStepErrors(data.details);
@@ -111,16 +137,24 @@ export default function PitchWizardPage() {
           goToStep(targetStep);
         }
         alert(data.error || "Submission failed");
-        setSubmitting(false);
         return;
       }
 
-      // Store result in sessionStorage for instant result presentation
+      resetIdempotencyKey();
       sessionStorage.setItem(`pitch_result_${data.pitchId}`, JSON.stringify(data));
       router.push(`/problems/${problemId}/pitch/result?pitchId=${data.pitchId}`);
     } catch (e) {
       console.error(e);
-      alert("Submission error occurred");
+      if (e instanceof DOMException && e.name === "AbortError") {
+        alert(
+          "The request timed out. Your draft is saved locally. Check your connection and try again."
+        );
+      } else {
+        alert("Submission error occurred. Your draft is saved locally.");
+      }
+    } finally {
+      clearTimeout(timeoutId);
+      submittingRef.current = false;
       setSubmitting(false);
     }
   };

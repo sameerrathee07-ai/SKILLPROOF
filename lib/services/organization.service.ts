@@ -4,6 +4,7 @@ import { ValidationError, NotFoundError } from "@/lib/api/errors";
 export interface CreateOrganizationInput {
   name: string;
   type?: string;
+  ownerId?: string;
 }
 
 export class OrganizationService {
@@ -12,7 +13,11 @@ export class OrganizationService {
    */
   static async listOrganizations() {
     return prisma.organization.findMany({
-      include: {
+      select: {
+        id: true,
+        name: true,
+        type: true,
+        createdAt: true,
         _count: {
           select: { problems: true },
         },
@@ -49,10 +54,19 @@ export class OrganizationService {
       throw new ValidationError("Organization name is required.");
     }
 
+    if (input.ownerId) {
+      const existing = await prisma.organization.findFirst({
+        where: { ownerId: input.ownerId },
+        orderBy: { createdAt: "asc" },
+      });
+      if (existing) return existing;
+    }
+
     return prisma.organization.create({
       data: {
         name: input.name.trim(),
         type: input.type || "COACHING_CENTER",
+        ownerId: input.ownerId,
       },
     });
   }

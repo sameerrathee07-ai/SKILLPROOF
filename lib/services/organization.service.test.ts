@@ -21,7 +21,13 @@ describe("OrganizationService", () => {
     prismaMock.organization.findMany.mockResolvedValue([{ id: "o1" }]);
     await expect(OrganizationService.listOrganizations()).resolves.toEqual([{ id: "o1" }]);
     expect(prismaMock.organization.findMany).toHaveBeenCalledWith({
-      include: { _count: { select: { problems: true } } },
+      select: {
+        id: true,
+        name: true,
+        type: true,
+        createdAt: true,
+        _count: { select: { problems: true } },
+      },
       orderBy: { createdAt: "desc" },
     });
   });

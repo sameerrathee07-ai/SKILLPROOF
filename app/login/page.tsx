@@ -19,6 +19,8 @@ export default function LoginPage() {
   const { login, signInWithGoogle } = useAuth();
   const router = useRouter();
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const submitRef = useRef(false);
+  const googleRef = useRef(false);
 
   const nextPath = () => safeNextPath(window.location.search);
 
@@ -47,16 +49,23 @@ export default function LoginPage() {
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!email.trim()) return;
+    if (submitRef.current || !email.trim()) return;
+    submitRef.current = true;
     setSubmitting(true);
-    const success = await login(email, image);
-    setSubmitting(false);
-    if (success) {
-      router.push(nextPath());
+    try {
+      const success = await login(email, image);
+      if (success) {
+        router.push(nextPath());
+      }
+    } finally {
+      submitRef.current = false;
+      setSubmitting(false);
     }
   };
 
   const handleGoogleSignIn = async () => {
+    if (googleRef.current) return;
+    googleRef.current = true;
     setGoogleLoading(true);
     try {
       await signInWithGoogle(googleRole);
@@ -64,6 +73,7 @@ export default function LoginPage() {
       console.error(e);
       alert("Failed to initiate Google sign-in.");
     } finally {
+      googleRef.current = false;
       setGoogleLoading(false);
     }
   };

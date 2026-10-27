@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { AppError } from "./errors";
+import { AppError, RateLimitError } from "./errors";
 
 /**
  * Standardized success response builder
@@ -13,13 +13,18 @@ export function successResponse<T>(data: T, status = 200) {
  */
 export function errorResponse(error: unknown) {
   if (error instanceof AppError) {
+    const headers =
+      error instanceof RateLimitError
+        ? { "Retry-After": String(error.retryAfterSeconds) }
+        : undefined;
+
     return NextResponse.json(
       {
         error: error.message,
         code: error.code,
         details: error.details,
       },
-      { status: error.statusCode }
+      { status: error.statusCode, headers }
     );
   }
 

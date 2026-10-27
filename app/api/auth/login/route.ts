@@ -1,9 +1,16 @@
 import { prisma } from "@/lib/db";
 import { withErrorHandler, successResponse } from "@/lib/api/response";
 import { AppError, UnauthorizedError } from "@/lib/api/errors";
+import { enforceRateLimit, getClientIp } from "@/lib/api/rate-limit";
 import { SESSION_COOKIE, sessionCookieOptions, signSession } from "@/lib/auth/session";
 
 export const POST = withErrorHandler(async (request: Request) => {
+  await enforceRateLimit({
+    key: `auth:login:${getClientIp(request)}`,
+    limit: 10,
+    windowMs: 15 * 60 * 1000,
+  });
+
   const body = await request.json();
   const { email, image } = body;
 

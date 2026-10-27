@@ -30,9 +30,14 @@ const SHELL_ROUTES: Array<{ test: (pathname: string) => boolean; color: string }
     color: "rgb(59, 130, 246)",
   },
   { test: (pathname) => pathname === "/org/problems/new", color: "rgb(20, 184, 166)" },
+  { test: (pathname) => pathname === "/org/dashboard", color: "rgb(245, 158, 11)" },
   {
     test: (pathname) => /^\/org\/problems\/[^/]+\/proposals$/.test(pathname),
     color: "rgb(245, 158, 11)",
+  },
+  {
+    test: (pathname) => /^\/solvers\/[^/]+$/.test(pathname),
+    color: "rgb(180, 83, 9)",
   },
   {
     test: (pathname) => /^\/org\/proposals\/[^/]+$/.test(pathname),

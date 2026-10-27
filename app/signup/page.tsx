@@ -19,6 +19,8 @@ export default function SignupPage() {
   const { signup, signInWithGoogle } = useAuth();
   const router = useRouter();
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const submitRef = useRef(false);
+  const googleRef = useRef(false);
 
   const handleDeviceImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -45,16 +47,23 @@ export default function SignupPage() {
 
   const handleSignup = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!name.trim() || !email.trim()) return;
+    if (submitRef.current || !name.trim() || !email.trim()) return;
+    submitRef.current = true;
     setSubmitting(true);
-    const success = await signup({ name, email, role, image });
-    setSubmitting(false);
-    if (success) {
-      router.push("/problems");
+    try {
+      const success = await signup({ name, email, role, image });
+      if (success) {
+        router.push("/problems");
+      }
+    } finally {
+      submitRef.current = false;
+      setSubmitting(false);
     }
   };
 
   const handleGoogleSignUp = async () => {
+    if (googleRef.current) return;
+    googleRef.current = true;
     setGoogleLoading(true);
     try {
       await signInWithGoogle(role);
@@ -62,6 +71,7 @@ export default function SignupPage() {
       console.error(e);
       alert("Failed to initiate Google sign-up.");
     } finally {
+      googleRef.current = false;
       setGoogleLoading(false);
     }
   };
