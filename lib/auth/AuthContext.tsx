@@ -79,7 +79,7 @@ function AuthInternal({ children }: { children: React.ReactNode }) {
       role: session.user.role || "SOLVER",
       tokens: session.user.tokens ?? 50,
       credibilityScore: session.user.credibilityScore ?? 1.0,
-      image: session.user.image,
+      image: localUser?.image !== undefined ? localUser.image : session.user.image,
     };
   }
 

@@ -45,6 +45,7 @@ const CollaborateButton = ({ className }: { className?: string }) => (
 );
 
 const UserAvatarBadge = ({ user }: { user: any }) => {
+  const [failedSrc, setFailedSrc] = useState<string | null>(null);
   const initials = user?.name
     ? user.name
         .split(" ")
@@ -63,11 +64,13 @@ const UserAvatarBadge = ({ user }: { user: any }) => {
       title={user ? `Profile: ${user.name}` : "Sign In to Access Profile (SP)"}
     >
       <div className="relative w-10 h-10 rounded-full flex items-center justify-center overflow-hidden border-2 border-white/50 bg-slate-900 text-white font-bold transition-transform group-hover:scale-105 shadow-md">
-        {user?.image ? (
+        {user?.image && user.image !== failedSrc ? (
           <img
             src={user.image}
             alt={user.name || "User Profile"}
             className="w-full h-full object-cover"
+            referrerPolicy="no-referrer"
+            onError={() => setFailedSrc(user.image)}
           />
         ) : (
           <span className="text-xs font-black tracking-wider text-slate-100">

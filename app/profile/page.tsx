@@ -25,15 +25,6 @@ import {
   Upload
 } from "lucide-react";
 
-const AVATAR_PRESETS = [
-  "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=200&auto=format&fit=crop&q=80",
-  "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=200&auto=format&fit=crop&q=80",
-  "https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=200&auto=format&fit=crop&q=80",
-  "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=200&auto=format&fit=crop&q=80",
-  "https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?w=200&auto=format&fit=crop&q=80",
-  "https://images.unsplash.com/photo-1519085360753-af0119f7cbe7?w=200&auto=format&fit=crop&q=80",
-];
-
 export default function ProfilePage() {
   const { user, loading, updateUser } = useAuth();
 
@@ -316,15 +307,15 @@ export default function ProfilePage() {
             </div>
           )}
 
-          <form onSubmit={handleSave} className={activeTab === "PROFILE" ? "space-y-8" : "hidden"}>
+          <form onSubmit={handleSave} className={activeTab === "PROFILE" ? "space-y-10" : "hidden"}>
             {/* Avatar Section */}
-            <div className="rounded-xl border border-white/10 bg-slate-950/70 backdrop-blur-xl p-6 sm:p-8 space-y-6">
+            <div className="rounded-xl border border-white/10 bg-slate-950/70 backdrop-blur-xl p-6 sm:p-10 space-y-8">
               <h2 className="text-lg font-semibold text-white flex items-center gap-2">
                 <ImageIcon className="w-5 h-5 text-blue-400" />
                 <span>Profile Picture (PFP)</span>
               </h2>
 
-              <div className="flex flex-col sm:flex-row items-center gap-6">
+              <div className="flex flex-col sm:flex-row items-center gap-8">
                 {/* Avatar Preview */}
                 <div className="relative group">
                   <div className="w-24 h-24 rounded-full overflow-hidden border-2 border-blue-500/40 bg-slate-900 flex items-center justify-center text-white text-2xl font-black shadow-xl">
@@ -382,52 +373,18 @@ export default function ProfilePage() {
                       )}
                     </div>
                   </div>
-
-                  <div>
-                    <Label htmlFor="image-url" className="text-xs text-slate-300">
-                      Or Avatar Image URL
-                    </Label>
-                    <Input
-                      id="image-url"
-                      type="url"
-                      placeholder="https://images.unsplash.com/..."
-                      value={image}
-                      onChange={(e) => setImage(e.target.value)}
-                      className="mt-1.5 bg-slate-900/80 border-white/10 text-white placeholder:text-slate-600"
-                    />
-                  </div>
-
-                  <div>
-                    <span className="text-xs text-slate-400 block mb-2 font-medium">
-                      Or pick from verified presets:
-                    </span>
-                    <div className="flex flex-wrap gap-2.5">
-                      {AVATAR_PRESETS.map((preset, idx) => (
-                        <button
-                          key={idx}
-                          type="button"
-                          onClick={() => setImage(preset)}
-                          className={`w-9 h-9 rounded-full overflow-hidden border-2 transition-transform hover:scale-110 ${
-                            image === preset ? "border-blue-400 ring-2 ring-blue-500/40" : "border-white/20"
-                          }`}
-                        >
-                          <img src={preset} alt={`Preset ${idx + 1}`} className="w-full h-full object-cover" />
-                        </button>
-                      ))}
-                    </div>
-                  </div>
                 </div>
               </div>
             </div>
 
             {/* Personal & Professional Info */}
-            <div className="rounded-xl border border-white/10 bg-slate-950/70 backdrop-blur-xl p-6 sm:p-8 space-y-6">
+            <div className="rounded-xl border border-white/10 bg-slate-950/70 backdrop-blur-xl p-6 sm:p-10 space-y-8">
               <h2 className="text-lg font-semibold text-white flex items-center gap-2">
                 <User className="w-5 h-5 text-blue-400" />
                 <span>Personal & Professional Details</span>
               </h2>
 
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-8 gap-y-7">
                 <div>
                   <Label htmlFor="name" className="text-xs text-slate-300">
                     Full Name *
@@ -523,7 +480,7 @@ export default function ProfilePage() {
             </div>
 
             {/* Actions Bar */}
-            <div className="flex items-center justify-end gap-4 pt-2">
+            <div className="flex items-center justify-end gap-4 pt-6">
               {saved && (
                 <div className="flex items-center gap-1.5 text-xs font-semibold text-emerald-400 bg-emerald-500/10 border border-emerald-500/20 px-3 py-2 rounded-lg animate-in fade-in">
                   <Check className="w-4 h-4" />
