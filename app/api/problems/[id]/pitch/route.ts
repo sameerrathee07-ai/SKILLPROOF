@@ -1,9 +1,11 @@
 import { PitchService } from "@/lib/services/pitch.service";
 import { withErrorHandler, successResponse } from "@/lib/api/response";
 import { validateFullPitch } from "@/lib/validations/pitch.schema";
-import { UnauthorizedError, ValidationError } from "@/lib/api/errors";
+import { AppError, UnauthorizedError, ValidationError } from "@/lib/api/errors";
 import { enforceRateLimit, getClientIp } from "@/lib/api/rate-limit";
 import { getRequestUser } from "@/lib/auth/request-user";
+import { readJsonBody } from "@/lib/api/request-body";
+import { checkBotSubmission } from "@/lib/security/bot-protection";
 
 export const POST = withErrorHandler(
   async (request: Request, { params }: { params: { id: string } }) => {
@@ -22,7 +24,14 @@ export const POST = withErrorHandler(
       windowMs: 5 * 60 * 1000,
     });
 
-    const body = await request.json();
+    const body = await readJsonBody(request);
+
+    // Bot protection
+    const botCheck = checkBotSubmission(body, request.headers);
+    if (botCheck.isBot) {
+      throw new AppError("Request flagged by automated protection.", 403, "BOT_DETECTED");
+    }
+
     const { pitchInput, revisionCount } = body;
     const idempotencyKey =
       request.headers.get("Idempotency-Key")?.trim() || undefined;

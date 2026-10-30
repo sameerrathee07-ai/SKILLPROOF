@@ -60,4 +60,10 @@ describe("POST /api/auth/login", () => {
     expect(res.status).toBe(400);
     expect((await res.json()).code).toBe("INVALID_EMAIL");
   });
+
+  it("blocks bot requests filling honeypots", async () => {
+    const res = await POST(req({ email: "bot@spam.com", _gotcha: "spam" }));
+    expect(res.status).toBe(403);
+    expect((await res.json()).code).toBe("BOT_DETECTED");
+  });
 });

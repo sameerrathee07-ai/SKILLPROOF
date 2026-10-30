@@ -3,6 +3,7 @@ import { UnauthorizedError, ValidationError } from "@/lib/api/errors";
 import { withErrorHandler, successResponse } from "@/lib/api/response";
 import { getSessionUser } from "@/lib/auth/session-user";
 import { TOKEN_TIERS } from "@/lib/tokens";
+import { readJsonBody } from "@/lib/api/request-body";
 
 export const POST = withErrorHandler(async (request: Request) => {
   const user = await getSessionUser();
@@ -10,7 +11,7 @@ export const POST = withErrorHandler(async (request: Request) => {
     throw new UnauthorizedError();
   }
 
-  const { tier } = await request.json();
+  const { tier } = await readJsonBody(request);
   const selected = TOKEN_TIERS.find((t) => t.tier === tier);
   if (!selected) {
     throw new ValidationError("Unknown token tier.");
