@@ -32,3 +32,17 @@ if (typeof window !== "undefined" && !window.IntersectionObserver) {
     value: MockIntersectionObserver,
   });
 }
+
+// jsdom has no ResizeObserver; the liquid navbar measures itself with one.
+if (typeof window !== "undefined" && !window.ResizeObserver) {
+  class MockResizeObserver {
+    observe = vi.fn();
+    unobserve = vi.fn();
+    disconnect = vi.fn();
+  }
+  Object.defineProperty(window, "ResizeObserver", {
+    writable: true,
+    configurable: true,
+    value: MockResizeObserver,
+  });
+}

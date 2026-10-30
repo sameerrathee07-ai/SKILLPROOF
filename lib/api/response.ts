@@ -28,7 +28,12 @@ export function errorResponse(error: unknown) {
     );
   }
 
-  const errMessage = error instanceof Error ? error.message : "Internal server error";
+  const isProd = process.env.NODE_ENV === "production";
+  const errMessage = isProd
+    ? "Internal server error"
+    : error instanceof Error
+      ? error.message
+      : "Internal server error";
   console.error("[Unhandled API Error]:", error);
 
   return NextResponse.json(

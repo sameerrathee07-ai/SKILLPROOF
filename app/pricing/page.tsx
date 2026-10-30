@@ -14,8 +14,9 @@ export default function PricingPage() {
     {
       name: "Student Solver",
       badge: "Free Tier",
-      price: "$0",
+      price: "₹0",
       cadence: "forever free",
+      alternates: [],
       description: "For student engineers and independent solvers submitting proposals to open challenges.",
       features: [
         "50 initial complimentary tokens",
@@ -31,8 +32,12 @@ export default function PricingPage() {
     {
       name: "Education Partner",
       badge: "Most Popular",
-      price: "$49",
-      cadence: "per challenge / month",
+      price: "₹3,599",
+      cadence: "month",
+      alternates: [
+        { price: "₹13,499", cadence: "quarter" },
+        { price: "₹30,999", cadence: "year" },
+      ],
       description: "For coaching centers, academies, and departments posting friction problems.",
       features: [
         "Unlimited vetted proposal reception",
@@ -51,6 +56,7 @@ export default function PricingPage() {
       badge: "Custom Wedge",
       price: "Custom",
       cadence: "annual license",
+      alternates: [],
       description: "For multi-department universities and training networks requiring custom calibration.",
       features: [
         "Custom domain keyword calibration",
@@ -112,6 +118,15 @@ export default function PricingPage() {
                       <span className="text-4xl font-extrabold text-white">{tier.price}</span>
                       <span className="text-xs text-slate-400">/ {tier.cadence}</span>
                     </div>
+                    {tier.alternates.length > 0 && (
+                      <div className="mt-2 flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-slate-400">
+                        {tier.alternates.map((alt) => (
+                          <span key={alt.cadence}>
+                            <span className="font-semibold text-slate-200">{alt.price}</span> / {alt.cadence}
+                          </span>
+                        ))}
+                      </div>
+                    )}
                     <p className="text-xs text-slate-400 mt-3 leading-relaxed">
                       {tier.description}
                     </p>
@@ -154,7 +169,7 @@ export default function PricingPage() {
             <div>
               <h3 className="text-base font-bold text-white">Need extra solver tokens?</h3>
               <p className="text-xs text-slate-400 mt-0.5">
-                Top up your submission balance starting at $5 for 25 additional tokens.
+                Top up your submission balance starting at ₹49 for 20 additional tokens.
               </p>
             </div>
             <Link href="/tokens">

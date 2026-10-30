@@ -41,6 +41,21 @@ describe("errorResponse", () => {
     expect(await res.json()).toEqual({ error: "boom", code: "INTERNAL_SERVER_ERROR" });
   });
 
+  it("masks generic Error messages in production to prevent leaking internal details", async () => {
+    const originalEnv = process.env.NODE_ENV;
+    process.env.NODE_ENV = "production";
+    const spy = vi.spyOn(console, "error").mockImplementation(() => {});
+    const res = errorResponse(new Error("sensitive postgres connection leaked"));
+    spy.mockRestore();
+    process.env.NODE_ENV = originalEnv;
+
+    expect(res.status).toBe(500);
+    expect(await res.json()).toEqual({
+      error: "Internal server error",
+      code: "INTERNAL_SERVER_ERROR",
+    });
+  });
+
   it("falls back to 500 for a non-Error throw", async () => {
     const spy = vi.spyOn(console, "error").mockImplementation(() => {});
     const res = errorResponse("a string");

@@ -1,14 +1,17 @@
 // @vitest-environment node
-import { describe, it, expect } from "vitest";
+import { describe, it, expect, afterEach } from "vitest";
 import { NextRequest } from "next/server";
 import { middleware } from "./middleware";
 import { signSession, SESSION_COOKIE } from "./lib/auth/session";
 
 process.env.SESSION_SECRET = "middleware-test-secret";
 
-const requestTo = (path: string, cookieToken?: string) =>
+const requestTo = (path: string, cookieToken?: string, headersInit?: Record<string, string>) =>
   new NextRequest(`http://localhost${path}`, {
-    headers: cookieToken ? { cookie: `${SESSION_COOKIE}=${cookieToken}` } : {},
+    headers: {
+      ...(cookieToken ? { cookie: `${SESSION_COOKIE}=${cookieToken}` } : {}),
+      ...headersInit,
+    },
   });
 
 const tokenFor = (role: string) => signSession({ userId: "u1", role });
@@ -17,6 +20,26 @@ const loginRedirectFor = (path: string) =>
   `http://localhost/login?next=${encodeURIComponent(path)}`;
 
 describe("middleware route protection", () => {
+  const originalEnv = process.env.NODE_ENV;
+
+  afterEach(() => {
+    process.env.NODE_ENV = originalEnv;
+  });
+
+  it("forces HTTPS in production for insecure external requests", async () => {
+    process.env.NODE_ENV = "production";
+    const req = new NextRequest("http://skillproof.com/admin", {
+      headers: {
+        "x-forwarded-proto": "http",
+        host: "skillproof.com",
+      },
+    });
+
+    const res = await middleware(req);
+    expect(res.status).toBe(301);
+    expect(res.headers.get("location")).toBe("https://skillproof.com/admin");
+  });
+
   it("redirects unauthenticated /admin requests to login with next", async () => {
     const res = await middleware(requestTo("/admin"));
     expect(res.status).toBe(307);

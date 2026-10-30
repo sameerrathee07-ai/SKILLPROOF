@@ -5,10 +5,12 @@ import Link from "next/link";
 import { Sheet, SheetContent, SheetTrigger, SheetTitle, SheetClose } from "@/components/ui/sheet";
 import { NavigationMenu, NavigationMenuItem, NavigationMenuLink, NavigationMenuList } from "@/components/ui/navigation-menu";
 import { cn } from "@/lib/utils";
-import { Menu, X, ArrowUpRight, User as UserIcon, LogIn, LogOut } from "lucide-react";
+import { Menu, X, ArrowUpRight, User as UserIcon, LogIn, LogOut, House, Target, LayoutDashboard, Gauge, Info, Wrench, Tag, type LucideIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { motion } from "motion/react";
 import { useAuth } from "@/lib/auth/AuthContext";
+import { usePathname } from "next/navigation";
+import { LiquidNavbar } from "@/components/ui/liquid-glass-navbar";
 
 export type NavigationSection = {
   title: string;
@@ -25,6 +27,16 @@ export const defaultHeaderNav: NavigationSection[] = [
   { title: "Services", href: "/services" },
   { title: "Pricing", href: "/pricing" },
 ];
+
+const NAV_ICONS: Record<string, LucideIcon> = {
+  "/": House,
+  "/problems": Target,
+  "/org/dashboard": LayoutDashboard,
+  "/admin/calibrate": Gauge,
+  "/about": Info,
+  "/services": Wrench,
+  "/pricing": Tag,
+};
 
 type HeaderProps = {
   navigationData?: NavigationSection[];
@@ -103,6 +115,22 @@ const Header = ({ navigationData, className }: HeaderProps) => {
         user?.role === "ADMIN")
   );
 
+  const pathname = usePathname();
+  const activeIndex = Math.max(
+    0,
+    links.findIndex((item) =>
+      item.href === "/" ? pathname === "/" : !!pathname && pathname.startsWith(item.href)
+    )
+  );
+  const liquidItems = links.map((item) => {
+    const Icon = NAV_ICONS[item.href] ?? House;
+    return {
+      label: item.title,
+      href: item.href,
+      icon: <Icon className="w-[18px] h-[18px]" />,
+    };
+  });
+
   const handleScroll = useCallback(() => {
     setSticky(window.scrollY >= 50);
   }, []);
@@ -146,24 +174,13 @@ const Header = ({ navigationData, className }: HeaderProps) => {
         </div>
 
         {/* Desktop Navigation */}
-        <div>
-          <NavigationMenu className="max-lg:hidden bg-muted/60 p-1 rounded-lg">
-            <NavigationMenuList className="flex gap-1">
-              {links.map((navItem) => (
-                <NavigationMenuItem key={navItem.title}>
-                  <NavigationMenuLink
-                    href={navItem.href}
-                    className={cn(
-                      "px-3 py-2 text-sm font-medium rounded-md text-muted-foreground hover:text-foreground hover:bg-background transition tracking-normal",
-                      navItem.isActive ? "bg-background text-foreground shadow-sm" : ""
-                    )}
-                  >
-                    {navItem.title}
-                  </NavigationMenuLink>
-                </NavigationMenuItem>
-              ))}
-            </NavigationMenuList>
-          </NavigationMenu>
+        <div className="max-lg:hidden">
+          <LiquidNavbar
+            tone="dark"
+            compact
+            items={liquidItems}
+            active={activeIndex}
+          />
         </div>
 
         {/* Desktop Actions */}

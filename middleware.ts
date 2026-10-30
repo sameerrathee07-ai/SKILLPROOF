@@ -3,6 +3,17 @@ import { SESSION_COOKIE, verifySession } from "./lib/auth/session";
 import { getToken } from "next-auth/jwt";
 
 export async function middleware(request: NextRequest) {
+  // 1. Force HTTPS in production
+  if (process.env.NODE_ENV === "production") {
+    const proto = request.headers.get("x-forwarded-proto");
+    const host = request.headers.get("host") || "";
+    if (proto === "http" && !host.includes("localhost") && !host.includes("127.0.0.1")) {
+      const url = request.nextUrl.clone();
+      url.protocol = "https:";
+      return NextResponse.redirect(url, 301);
+    }
+  }
+
   const { pathname, search } = request.nextUrl;
 
   const isAdmin = pathname === "/admin" || pathname.startsWith("/admin/");
