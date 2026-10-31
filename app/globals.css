@@ -104,3 +104,12 @@ body {
     page-break-after: always;
   }
 }
+
+:root {
+  --ns-muted: #4d4d4d;
+  --ns-accent: #006bff;
+}
+
+.dark {
+  --ns-muted: #8f8f8f;
+}
