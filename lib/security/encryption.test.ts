@@ -26,8 +26,8 @@ describe("AES-256-GCM encryption", () => {
   it("fails to decrypt tampered ciphertext", () => {
     const encrypted = encryptSensitive("my-confidential-note");
     const [iv, cipher, tag] = encrypted.split(".");
-    // Tamper with the ciphertext by flipping a byte
-    const tamperedCipher = cipher.slice(0, -1) + (cipher.endsWith("A") ? "B" : "A");
+    // Flip the first base64 char so the change cannot land in padding bits
+    const tamperedCipher = (cipher[0] === "A" ? "B" : "A") + cipher.slice(1);
     const tamperedPayload = [iv, tamperedCipher, tag].join(".");
 
     expect(() => decryptSensitive(tamperedPayload)).toThrow();

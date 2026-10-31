@@ -62,6 +62,8 @@ export interface DyeWhorlProps {
   density?: number;
   /** How hard the pointer stirs the fluid, 0..2. @default 1 */
   stir?: number;
+  /** Whether the pointer stirs the ink. @default true */
+  interactive?: boolean;
   /** Freezes the tank on a fully developed still frame without unmounting. */
   paused?: boolean;
   /** Rendered in the DOM over the tank — eyebrow, headline, CTA. */
@@ -773,6 +775,7 @@ export function DyeWhorl({
   speed = 1,
   density = 1,
   stir = 1,
+  interactive = true,
   paused = false,
   children,
   className = "",
@@ -1503,20 +1506,22 @@ export function DyeWhorl({
       havePointer = false;
     };
 
-    wrap.addEventListener("pointerenter", onPointerEnter);
-    wrap.addEventListener("pointerleave", onPointerLeave);
-    wrap.addEventListener("pointermove", onPointerMove);
-    wrap.addEventListener("pointerdown", onPointerDown);
-    wrap.addEventListener("pointerup", onPointerUp);
-    wrap.addEventListener("pointercancel", onPointerCancel);
-    // the wrap's viewport offset only moves on scroll or layout, so mark it
-    // stale here and re-read it once, on the next pointer event, instead of
-    // forcing a layout inside every pointermove
-    window.addEventListener("scroll", markRectDirty, {
-      passive: true,
-      capture: true,
-    });
-    window.addEventListener("resize", markRectDirty, { passive: true });
+    if (interactive) {
+      wrap.addEventListener("pointerenter", onPointerEnter);
+      wrap.addEventListener("pointerleave", onPointerLeave);
+      wrap.addEventListener("pointermove", onPointerMove);
+      wrap.addEventListener("pointerdown", onPointerDown);
+      wrap.addEventListener("pointerup", onPointerUp);
+      wrap.addEventListener("pointercancel", onPointerCancel);
+      // the wrap's viewport offset only moves on scroll or layout, so mark it
+      // stale here and re-read it once, on the next pointer event, instead of
+      // forcing a layout inside every pointermove
+      window.addEventListener("scroll", markRectDirty, {
+        passive: true,
+        capture: true,
+      });
+      window.addEventListener("resize", markRectDirty, { passive: true });
+    }
 
     const mq = window.matchMedia("(prefers-reduced-motion: reduce)");
     let reduced = mq.matches;
@@ -1644,7 +1649,7 @@ export function DyeWhorl({
       solver.destroy();
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [speed]);
+  }, [speed, interactive]);
 
   return (
     <div

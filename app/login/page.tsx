@@ -2,7 +2,7 @@
 
 import { useState, useRef, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { Mail, Camera, Upload, X, ArrowRight } from "lucide-react";
+import { Mail, ArrowRight } from "lucide-react";
 import { useAuth } from "@/lib/auth/AuthContext";
 import { safeNextPath } from "@/lib/auth/next-path";
 import { FullScreenAuth, GoogleMark } from "@/components/ui/full-screen-auth";
@@ -14,14 +14,12 @@ const inputClass =
 export default function LoginPage() {
   const [email, setEmail] = useState("");
   const [emailError, setEmailError] = useState("");
-  const [image, setImage] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [googleLoading, setGoogleLoading] = useState(false);
   const [googleRole, setGoogleRole] = useState<"SOLVER" | "POSTER">("SOLVER");
   const [authError, setAuthError] = useState<string | null>(null);
   const { login, signInWithGoogle } = useAuth();
   const router = useRouter();
-  const fileInputRef = useRef<HTMLInputElement>(null);
   const submitRef = useRef(false);
   const googleRef = useRef(false);
 
@@ -37,29 +35,6 @@ export default function LoginPage() {
 
   const nextPath = () => safeNextPath(window.location.search);
 
-  const handleDeviceImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-
-    if (!file.type.startsWith("image/")) {
-      alert("Please select a valid image file.");
-      return;
-    }
-    if (file.size > 3 * 1024 * 1024) {
-      alert("Image size should be under 3MB.");
-      return;
-    }
-
-    const reader = new FileReader();
-    reader.onload = (event) => {
-      const result = event.target?.result as string;
-      if (result) {
-        setImage(result);
-      }
-    };
-    reader.readAsDataURL(file);
-  };
-
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!EMAIL_RE.test(email.trim())) {
@@ -71,7 +46,7 @@ export default function LoginPage() {
     submitRef.current = true;
     setSubmitting(true);
     try {
-      const success = await login(email.trim(), image);
+      const success = await login(email.trim());
       if (success) {
         router.push(nextPath());
       }
@@ -153,57 +128,6 @@ export default function LoginPage() {
             or sign in with email
           </span>
           <div className="h-px flex-1 bg-neutral-200" />
-        </div>
-
-        <div className="rounded-xl border border-neutral-200 bg-white p-3">
-          <div className="flex items-center justify-between">
-            <label className="text-xs font-semibold text-neutral-700">
-              Profile picture (from device)
-            </label>
-            <span className="text-[10px] text-neutral-400">Optional</span>
-          </div>
-
-          <div className="mt-2.5 flex items-center gap-3">
-            <div className="relative flex h-12 w-12 shrink-0 items-center justify-center overflow-hidden rounded-full border-2 border-neutral-200 bg-neutral-100">
-              {image ? (
-                <img src={image} alt="Profile preview" className="h-full w-full object-cover" />
-              ) : (
-                <Camera className="h-5 w-5 text-neutral-400" />
-              )}
-            </div>
-
-            <div className="flex flex-1 items-center gap-2">
-              <input
-                ref={fileInputRef}
-                type="file"
-                accept="image/*"
-                onChange={handleDeviceImageChange}
-                className="hidden"
-                id="device-pfp-login"
-              />
-              <label
-                htmlFor="device-pfp-login"
-                className="inline-flex cursor-pointer items-center gap-1.5 rounded-md border border-neutral-300 bg-neutral-50 px-3 py-1.5 text-xs font-medium text-neutral-800 transition hover:bg-neutral-100"
-              >
-                <Upload className="h-3.5 w-3.5" />
-                <span>{image ? "Change photo" : "Choose file"}</span>
-              </label>
-
-              {image && (
-                <button
-                  type="button"
-                  onClick={() => {
-                    setImage(null);
-                    if (fileInputRef.current) fileInputRef.current.value = "";
-                  }}
-                  className="inline-flex items-center gap-1 rounded-md px-2.5 py-1.5 text-xs font-medium text-rose-600 transition hover:bg-rose-50"
-                >
-                  <X className="h-3.5 w-3.5" />
-                  <span>Remove</span>
-                </button>
-              )}
-            </div>
-          </div>
         </div>
 
         <form onSubmit={handleLogin} noValidate className="space-y-3">

@@ -357,13 +357,6 @@ export function CinematicFooter() {
               © 2026 SkillProof. All rights reserved.
             </div>
 
-            <div className="footer-glass-pill px-6 py-3 rounded-full flex items-center gap-2 order-1 md:order-2 cursor-default border-slate-200/70">
-              <span className="text-slate-500 text-[10px] md:text-xs font-bold uppercase tracking-widest">Crafted with</span>
-              <span className="animate-footer-heartbeat text-sm md:text-base text-red-600">❤</span>
-              <span className="text-slate-500 text-[10px] md:text-xs font-bold uppercase tracking-widest">by</span>
-              <span className="text-slate-900 font-black text-xs md:text-sm tracking-normal ml-1">SkillProof</span>
-            </div>
-
             <MagneticButton
               as="button"
               type="button"

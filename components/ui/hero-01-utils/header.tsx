@@ -215,7 +215,7 @@ const Header = ({ navigationData, className }: HeaderProps) => {
               </Link>
               <Link
                 href="/signup"
-                className="hidden sm:inline-flex items-center px-3 py-1.5 text-xs font-semibold text-slate-400 hover:text-white transition"
+                className="hidden sm:inline-flex items-center px-3 py-1.5 text-xs font-semibold text-slate-400 hover:text-white bg-black hover:bg-neutral-900 rounded-md border border-slate-700 transition"
               >
                 Sign Up
               </Link>

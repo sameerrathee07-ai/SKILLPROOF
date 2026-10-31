@@ -14,7 +14,7 @@ export default function AgencyHeroSection({
 }: AgencyHeroSectionProps = {}) {
   return (
     <div className="dark bg-[rgb(10,10,10)]">
-      <DyeWhorl className="min-h-screen" style={{ touchAction: "auto" }}>
+      <DyeWhorl interactive={false} className="min-h-screen" style={{ touchAction: "auto" }}>
         <Header navigationData={navigationData} />
         <div>
           <HeroSection />
