@@ -64,6 +64,8 @@ export interface DyeWhorlProps {
   stir?: number;
   /** Whether the pointer stirs the ink. @default true */
   interactive?: boolean;
+  /** Follow prefers-reduced-motion by freezing the tank. @default true */
+  respectReducedMotion?: boolean;
   /** Freezes the tank on a fully developed still frame without unmounting. */
   paused?: boolean;
   /** Rendered in the DOM over the tank — eyebrow, headline, CTA. */
@@ -776,6 +778,7 @@ export function DyeWhorl({
   density = 1,
   stir = 1,
   interactive = true,
+  respectReducedMotion = true,
   paused = false,
   children,
   className = "",
@@ -1525,7 +1528,7 @@ export function DyeWhorl({
 
     const mq = window.matchMedia("(prefers-reduced-motion: reduce)");
     let reduced = mq.matches;
-    staticMode = reduced || pausedRef.current;
+    staticMode = (reduced && respectReducedMotion) || pausedRef.current;
 
     // Coalesced to one realloc per frame. ResizeObserver fires on every step of
     // a window drag, and each fire tears down six float targets and re-seeds
@@ -1543,7 +1546,7 @@ export function DyeWhorl({
     if (cssW >= 2 && !velocity) allocate();
 
     const applyMode = () => {
-      const wantStatic = reduced || pausedRef.current;
+      const wantStatic = (reduced && respectReducedMotion) || pausedRef.current;
       if (wantStatic === staticMode && (wantStatic ? true : running)) return;
       staticMode = wantStatic;
       if (staticMode) {
@@ -1649,7 +1652,7 @@ export function DyeWhorl({
       solver.destroy();
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [speed, interactive]);
+  }, [speed, interactive, respectReducedMotion]);
 
   return (
     <div
