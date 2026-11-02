@@ -18,7 +18,7 @@ import {
   ChevronRight,
   TrendingUp
 } from "lucide-react";
-import { ScoreResult } from "@/lib/scoring/engine";
+import { ScoreResult, credibilityBoostForScore } from "@/lib/scoring/engine";
 import { ScoreMeter } from "@/components/ScoreMeter";
 import { KnockoutCard } from "@/components/KnockoutCard";
 import { SlideButton } from "@/components/SlideButton";
@@ -99,6 +99,8 @@ export default function PitchResultPage() {
   const passed = evaluation.passed;
   const knockedOut = evaluation.knockedOut;
   const score = evaluation.overallScore;
+  const credibilityAwarded =
+    pitchData?.credibilityAwarded ?? credibilityBoostForScore(score);
 
   const dimensionList = [
     { key: "problemDiagnosis", name: "1. Problem Diagnosis", weight: 2.0 },
@@ -169,7 +171,11 @@ export default function PitchResultPage() {
               <div className="pt-2 flex items-center gap-3">
                 <div className="inline-flex items-center gap-2 bg-emerald-500/20 border border-emerald-400/30 px-3.5 py-1.5 rounded-md text-xs font-semibold text-emerald-200">
                   <TrendingUp className="w-4 h-4 text-emerald-300" />
-                  <span>Credibility Score Incremented: <strong>+0.10</strong></span>
+                  <span>
+                    {credibilityAwarded > 0
+                      ? `Credibility Score Incremented: +${credibilityAwarded.toFixed(2)}`
+                      : "No additional credibility — this problem's first pass was already rewarded."}
+                  </span>
                 </div>
               </div>
             ) : (

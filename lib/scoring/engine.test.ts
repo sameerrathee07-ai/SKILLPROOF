@@ -4,6 +4,7 @@ import {
   PitchInput,
   calculateTotalLength,
   checkKnockoutCriteria,
+  credibilityBoostForScore,
   evaluatePitch,
   hasPricing,
   normalizeAlternatives,
@@ -184,6 +185,24 @@ describe("checkKnockoutCriteria", () => {
     expect(result.hasAlternatives).toBe(true);
     expect(result.hasMinEffort).toBe(false);
     expect(result.reasons.join(" ")).toMatch(/200/);
+  });
+});
+
+describe("credibilityBoostForScore", () => {
+  it("awards nothing below the gate", () => {
+    expect(credibilityBoostForScore(5.9)).toBe(0);
+  });
+
+  it.each([
+    [6.0, 0.1],
+    [7.0, 0.1],
+    [7.89, 0.1],
+    [7.9, 0.2],
+    [9.0, 0.2],
+    [9.01, 0.5],
+    [10.0, 0.5],
+  ])("returns the correct boost for %s", (score, boost) => {
+    expect(credibilityBoostForScore(score)).toBe(boost);
   });
 });
 

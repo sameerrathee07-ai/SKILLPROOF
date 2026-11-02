@@ -1,5 +1,10 @@
 import { prisma } from "@/lib/db";
-import { evaluatePitch, PitchInput, ScoreResult } from "@/lib/scoring/engine";
+import {
+  credibilityBoostForScore,
+  evaluatePitch,
+  PitchInput,
+  ScoreResult,
+} from "@/lib/scoring/engine";
 import { ValidationError, NotFoundError } from "@/lib/api/errors";
 import { UserService } from "./user.service";
 import { validateFullPitch } from "@/lib/validations/pitch.schema";
@@ -82,6 +87,7 @@ export class PitchService {
           solver: existing.solver,
           pitch: existing,
           tokensRemaining: existing.solver.tokens,
+          credibilityAwarded: 0,
           idempotent: true,
         };
       }
@@ -150,6 +156,7 @@ export class PitchService {
             solver: existing.solver,
             pitch: existing,
             tokensRemaining: existing.solver.tokens,
+            credibilityAwarded: 0,
             idempotent: true,
           };
         }
@@ -158,8 +165,18 @@ export class PitchService {
     }
 
     let updatedSolver = solver;
+    let credibilityAwarded = 0;
     if (evaluation.passed) {
-      updatedSolver = await UserService.rewardSolverCredibility(solver.id, 0.1);
+      const passCount = await prisma.pitch.count({
+        where: { solverId: solver.id, problemId: problem.id, passed: true },
+      });
+      if (passCount === 1) {
+        credibilityAwarded = credibilityBoostForScore(evaluation.overallScore);
+        updatedSolver = await UserService.adjustSolverCredibility(
+          solver.id,
+          credibilityAwarded
+        );
+      }
     }
 
     if (updatedSolver.email) {
@@ -189,6 +206,7 @@ export class PitchService {
       solver: updatedSolver,
       pitch,
       tokensRemaining: balance?.tokens ?? 0,
+      credibilityAwarded,
     };
   }
 
@@ -423,12 +441,16 @@ export class PitchService {
     }
 
     const canContact = normalized === "SHORTLISTED" || normalized === "ACCEPTED";
+    const updatedSolver =
+      normalized === "ACCEPTED" && normalized !== currentStatus
+        ? await UserService.adjustSolverCredibility(updated.solver.id, 0.5)
+        : updated.solver;
 
     return {
       ...updated,
       solver: {
-        ...updated.solver,
-        email: canContact ? updated.solver.email : null,
+        ...updatedSolver,
+        email: canContact ? updatedSolver.email : null,
       },
     };
   }

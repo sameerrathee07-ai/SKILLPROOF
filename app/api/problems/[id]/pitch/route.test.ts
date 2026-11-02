@@ -76,6 +76,7 @@ describe("POST /api/problems/[id]/pitch API Route", () => {
       solver: { id: "solver-1" } as any,
       pitch: { id: "pitch-999" } as any,
       tokensRemaining: 44,
+      credibilityAwarded: 0,
     });
 
     const res = await makeRequest({

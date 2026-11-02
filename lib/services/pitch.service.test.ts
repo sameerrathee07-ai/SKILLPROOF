@@ -17,13 +17,16 @@ const { prismaMock, userServiceMock, evaluatePitchMock } = vi.hoisted(() => ({
   },
   userServiceMock: {
     getSolver: vi.fn(),
-    rewardSolverCredibility: vi.fn(),
+    adjustSolverCredibility: vi.fn(),
   },
   evaluatePitchMock: vi.fn(),
 }));
 
 vi.mock("@/lib/db", () => ({ prisma: prismaMock }));
-vi.mock("@/lib/scoring/engine", () => ({ evaluatePitch: evaluatePitchMock }));
+vi.mock("@/lib/scoring/engine", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("@/lib/scoring/engine")>();
+  return { ...actual, evaluatePitch: evaluatePitchMock };
+});
 vi.mock("./user.service", () => ({ UserService: userServiceMock }));
 vi.mock("@/lib/email/service", () => ({
   sendGateEvaluationResult: vi.fn(),
@@ -73,7 +76,7 @@ describe("PitchService", () => {
     prismaMock.user.update.mockReset();
     prismaMock.user.findUnique.mockReset();
     userServiceMock.getSolver.mockReset();
-    userServiceMock.rewardSolverCredibility.mockReset();
+    userServiceMock.adjustSolverCredibility.mockReset();
     evaluatePitchMock.mockReset();
     vi.mocked(emailService.sendProposalStatusUpdate).mockReset();
     vi.mocked(emailService.sendGateEvaluationResult).mockReset();
@@ -118,9 +121,10 @@ describe("PitchService", () => {
       userServiceMock.getSolver.mockResolvedValue({ id: "solver-1" });
       prismaMock.user.updateMany.mockResolvedValue({ count: 1 });
       prismaMock.user.findUnique.mockResolvedValue({ tokens: 44 });
-      evaluatePitchMock.mockReturnValue({ overallScore: 85, passed: true, knockedOut: false });
+      prismaMock.pitch.count.mockResolvedValue(1);
+      evaluatePitchMock.mockReturnValue({ overallScore: 8.5, passed: true, knockedOut: false });
       prismaMock.pitch.create.mockResolvedValue({ id: "pitch-1" });
-      userServiceMock.rewardSolverCredibility.mockResolvedValue({ id: "solver-1", credibilityScore: 1.1 });
+      userServiceMock.adjustSolverCredibility.mockResolvedValue({ id: "solver-1", credibilityScore: 1.2 });
 
       const result = await PitchService.submitAndEvaluate({
         problemId: "p1",
@@ -133,15 +137,63 @@ describe("PitchService", () => {
         data: expect.objectContaining({
           problemId: "p1",
           solverId: "solver-1",
-          score: 85,
+          score: 8.5,
           passed: true,
           knockedOut: false,
           revisionCount: 2,
         }),
       });
-      expect(userServiceMock.rewardSolverCredibility).toHaveBeenCalledWith("solver-1", 0.1);
+      expect(userServiceMock.adjustSolverCredibility).toHaveBeenCalledWith("solver-1", 0.2);
       expect(result.pitchId).toBe("pitch-1");
-      expect(result.solver).toEqual({ id: "solver-1", credibilityScore: 1.1 });
+      expect(result.credibilityAwarded).toBe(0.2);
+      expect(result.solver).toEqual({ id: "solver-1", credibilityScore: 1.2 });
+    });
+
+    it.each([
+      [6.5, 0.1],
+      [7.9, 0.2],
+      [9.0, 0.2],
+      [9.5, 0.5],
+    ])("awards the tier for a first pass scoring %s", async (score, boost) => {
+      prismaMock.problem.findUnique.mockResolvedValue({ id: "p1" });
+      userServiceMock.getSolver.mockResolvedValue({ id: "solver-1" });
+      prismaMock.user.updateMany.mockResolvedValue({ count: 1 });
+      prismaMock.user.findUnique.mockResolvedValue({ tokens: 44 });
+      prismaMock.pitch.count.mockResolvedValue(1);
+      evaluatePitchMock.mockReturnValue({ overallScore: score, passed: true, knockedOut: false });
+      prismaMock.pitch.create.mockResolvedValue({ id: "pitch-1" });
+      userServiceMock.adjustSolverCredibility.mockResolvedValue({ id: "solver-1" });
+
+      const result = await PitchService.submitAndEvaluate({
+        problemId: "p1",
+        solverId: "solver-1",
+        pitchInput,
+      });
+
+      expect(userServiceMock.adjustSolverCredibility).toHaveBeenCalledWith("solver-1", boost);
+      expect(result.credibilityAwarded).toBe(boost);
+    });
+
+    it("does not award credibility for a repeat pass on the same problem", async () => {
+      prismaMock.problem.findUnique.mockResolvedValue({ id: "p1" });
+      userServiceMock.getSolver.mockResolvedValue({ id: "solver-1" });
+      prismaMock.user.updateMany.mockResolvedValue({ count: 1 });
+      prismaMock.user.findUnique.mockResolvedValue({ tokens: 44 });
+      prismaMock.pitch.count.mockResolvedValue(2);
+      evaluatePitchMock.mockReturnValue({ overallScore: 9.5, passed: true, knockedOut: false });
+      prismaMock.pitch.create.mockResolvedValue({ id: "pitch-2" });
+
+      const result = await PitchService.submitAndEvaluate({
+        problemId: "p1",
+        solverId: "solver-1",
+        pitchInput,
+      });
+
+      expect(prismaMock.pitch.count).toHaveBeenCalledWith({
+        where: { solverId: "solver-1", problemId: "p1", passed: true },
+      });
+      expect(userServiceMock.adjustSolverCredibility).not.toHaveBeenCalled();
+      expect(result.credibilityAwarded).toBe(0);
     });
 
     it("does not reward solver when quality gate does not pass", async () => {
@@ -154,7 +206,7 @@ describe("PitchService", () => {
 
       await PitchService.submitAndEvaluate({ problemId: "p1", solverId: "solver-1", pitchInput });
 
-      expect(userServiceMock.rewardSolverCredibility).not.toHaveBeenCalled();
+      expect(userServiceMock.adjustSolverCredibility).not.toHaveBeenCalled();
     });
 
     it("defaults revisionCount to 0 when not provided", async () => {
@@ -177,9 +229,10 @@ describe("PitchService", () => {
       userServiceMock.getSolver.mockResolvedValue({ id: "solver-1" });
       prismaMock.user.updateMany.mockResolvedValue({ count: 1 });
       prismaMock.user.findUnique.mockResolvedValue({ tokens: 44 });
-      evaluatePitchMock.mockReturnValue({ overallScore: 85, passed: true, knockedOut: false });
+      prismaMock.pitch.count.mockResolvedValue(1);
+      evaluatePitchMock.mockReturnValue({ overallScore: 8.5, passed: true, knockedOut: false });
       prismaMock.pitch.create.mockResolvedValue({ id: "pitch-1" });
-      userServiceMock.rewardSolverCredibility.mockResolvedValue({ id: "solver-1", credibilityScore: 1.1 });
+      userServiceMock.adjustSolverCredibility.mockResolvedValue({ id: "solver-1", credibilityScore: 1.2 });
 
       const result = await PitchService.submitAndEvaluate({
         problemId: "p1",
@@ -218,9 +271,10 @@ describe("PitchService", () => {
       userServiceMock.getSolver.mockResolvedValue({ id: "solver-1" });
       prismaMock.user.updateMany.mockResolvedValue({ count: 1 });
       prismaMock.user.findUnique.mockResolvedValue({ tokens: 44 });
-      evaluatePitchMock.mockReturnValue({ overallScore: 85, passed: true, knockedOut: false });
+      prismaMock.pitch.count.mockResolvedValue(1);
+      evaluatePitchMock.mockReturnValue({ overallScore: 8.5, passed: true, knockedOut: false });
       prismaMock.pitch.create.mockResolvedValue({ id: "pitch-1" });
-      userServiceMock.rewardSolverCredibility.mockResolvedValue({ id: "solver-1", credibilityScore: 1.1 });
+      userServiceMock.adjustSolverCredibility.mockResolvedValue({ id: "solver-1", credibilityScore: 1.2 });
 
       const result = await PitchService.submitAndEvaluate({
         problemId: "p1",
@@ -641,9 +695,15 @@ describe("PitchService", () => {
       );
     });
 
-    it("allows SHORTLISTED -> ACCEPTED", async () => {
+    it("allows SHORTLISTED -> ACCEPTED and awards acceptance credibility", async () => {
       prismaMock.pitch.findUnique.mockResolvedValue(storedProposal("SHORTLISTED"));
       prismaMock.pitch.update.mockResolvedValue(updateResult("ACCEPTED"));
+      userServiceMock.adjustSolverCredibility.mockResolvedValue({
+        id: "solver-1",
+        email: "solver@example.com",
+        name: "Solver",
+        credibilityScore: 1.5,
+      });
 
       const result = await PitchService.updateProposalStatus(
         "pitch-1",
@@ -652,7 +712,23 @@ describe("PitchService", () => {
       );
 
       expect(result.status).toBe("ACCEPTED");
+      expect(result.solver.credibilityScore).toBe(1.5);
+      expect(userServiceMock.adjustSolverCredibility).toHaveBeenCalledWith("solver-1", 0.5);
       expect(emailService.sendProposalStatusUpdate).toHaveBeenCalledTimes(1);
+    });
+
+    it("does not award acceptance credibility on a notes-only ACCEPTED update", async () => {
+      prismaMock.pitch.findUnique.mockResolvedValue(storedProposal("ACCEPTED"));
+      prismaMock.pitch.update.mockResolvedValue(updateResult("ACCEPTED"));
+
+      await PitchService.updateProposalStatus(
+        "pitch-1",
+        poster,
+        "ACCEPTED",
+        "Updated notes."
+      );
+
+      expect(userServiceMock.adjustSolverCredibility).not.toHaveBeenCalled();
     });
 
     it("treats a same-status update as a notes edit with no email", async () => {

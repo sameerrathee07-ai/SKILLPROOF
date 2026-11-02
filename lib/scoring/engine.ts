@@ -68,6 +68,16 @@ export interface ScoreResult {
 export const GATE_THRESHOLD = 6.0;
 
 /**
+ * Credibility awarded for the first passing pitch on a solver/problem pair.
+ */
+export function credibilityBoostForScore(score: number): number {
+  if (score < GATE_THRESHOLD) return 0;
+  if (score > 9.0) return 0.5;
+  if (score >= 7.9) return 0.2;
+  return 0.1;
+}
+
+/**
  * Normalizes alternatives input to an array of non-empty items.
  */
 /**

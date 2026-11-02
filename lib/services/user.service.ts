@@ -29,16 +29,40 @@ export class UserService {
   }
 
   /**
-   * Increment credibility upon quality gate pass
+   * Apply a signed credibility change and keep the score within 0–10.
    */
-  static async rewardSolverCredibility(userId: string, boost = 0.1) {
+  static async adjustSolverCredibility(userId: string, delta: number) {
+    if (!Number.isFinite(delta) || delta === 0) {
+      throw new ValidationError("Credibility change must be a non-zero number.");
+    }
+
+    const updated = await prisma.user
+      .update({
+        where: { id: userId },
+        data: {
+          credibilityScore: {
+            increment: delta,
+          },
+        },
+      })
+      .catch((error: unknown) => {
+        if (
+          error &&
+          typeof error === "object" &&
+          "code" in error &&
+          error.code === "P2025"
+        ) {
+          throw new NotFoundError("Solver account not found.");
+        }
+        throw error;
+      });
+
+    const clamped = Math.min(10, Math.max(0, updated.credibilityScore));
+    if (clamped === updated.credibilityScore) return updated;
+
     return prisma.user.update({
       where: { id: userId },
-      data: {
-        credibilityScore: {
-          increment: boost,
-        },
-      },
+      data: { credibilityScore: clamped },
     });
   }
 }
